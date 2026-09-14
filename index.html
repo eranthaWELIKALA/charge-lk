@@ -1,0 +1,2014 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0F2233">
+<title>Charge.lk — EV charging time &amp; cost</title>
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icon-192.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="description" content="Work out EV charging time and cost for your car, your charger and your rate.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700;12..96,800&family=Plus+Jakarta+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{
+  --ink:#0F2233; --muted:#5C7489; --faint:#93A6B6;
+  --line:rgba(15,34,51,.10); --line-2:rgba(15,34,51,.06);
+  --card:#fff;
+  --green:#00B37E; --green-2:#E3F8F1;
+  --cyan:#0FA3C4;  --cyan-2:#E1F4F9;
+  --amber:#F59200; --amber-2:#FFF1DE;
+  --violet:#6C5CE7;--violet-2:#EDEAFD;
+  --coral:#F0495E; --coral-2:#FDE9EC;
+  --display:"Bricolage Grotesque",system-ui,sans-serif;
+  --body:"Plus Jakarta Sans",system-ui,sans-serif;
+  --mono:"IBM Plex Mono",ui-monospace,monospace;
+  --r:16px;
+  --shadow:0 1px 2px rgba(15,34,51,.05), 0 8px 24px -12px rgba(15,34,51,.18);
+  --shadow-lg:0 2px 4px rgba(15,34,51,.05), 0 18px 40px -18px rgba(15,34,51,.28);
+}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{
+  margin:0; background:#EFF4F6; color:var(--ink);
+  font-family:var(--body); font-size:15px; line-height:1.55;
+  -webkit-font-smoothing:antialiased; overflow-x:hidden;
+}
+
+/* ── animated background ───────────────────────────────── */
+.aurora{position:fixed;inset:0;z-index:-1;overflow:hidden;background:
+  linear-gradient(160deg,#EAF7F4 0%,#EEF1FE 45%,#FFF3EA 100%)}
+.aurora i{position:absolute;border-radius:50%;filter:blur(70px);opacity:.55;display:block}
+.aurora i:nth-child(1){width:52vw;height:52vw;background:#7FE7C4;top:-14vw;left:-10vw;animation:drift1 26s ease-in-out infinite}
+.aurora i:nth-child(2){width:46vw;height:46vw;background:#B9AEFF;top:32vh;right:-14vw;animation:drift2 31s ease-in-out infinite}
+.aurora i:nth-child(3){width:40vw;height:40vw;background:#FFCE8F;bottom:-16vw;left:22vw;animation:drift3 24s ease-in-out infinite}
+.aurora u{position:absolute;inset:0;display:block;
+  background-image:linear-gradient(rgba(15,34,51,.045) 1px,transparent 1px),
+                   linear-gradient(90deg,rgba(15,34,51,.045) 1px,transparent 1px);
+  background-size:46px 46px;mask-image:radial-gradient(ellipse at 50% 0%,#000 30%,transparent 78%)}
+@keyframes drift1{0%,100%{transform:translate(0,0) scale(1)}50%{transform:translate(6vw,7vh) scale(1.13)}}
+@keyframes drift2{0%,100%{transform:translate(0,0) scale(1)}50%{transform:translate(-8vw,-5vh) scale(1.09)}}
+@keyframes drift3{0%,100%{transform:translate(0,0) scale(1)}50%{transform:translate(5vw,-8vh) scale(1.16)}}
+
+.sprite{position:absolute;width:0;height:0;overflow:hidden}
+.wrap{max-width:1180px;margin:0 auto;padding:22px 18px 132px}
+
+/* ── masthead ──────────────────────────────────────────── */
+.mast{display:flex;align-items:center;gap:14px;margin-bottom:18px}
+.mark{width:52px;height:52px;flex:0 0 auto;border-radius:15px;display:grid;place-items:center;
+  background:linear-gradient(145deg,var(--green),var(--cyan));box-shadow:0 8px 20px -8px rgba(0,179,126,.75)}
+.mark svg{width:26px;height:26px;color:#fff;animation:pulse 2.6s ease-in-out infinite}
+@keyframes pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.72;transform:scale(.9)}}
+.mast h1{font-family:var(--display);font-weight:800;font-size:clamp(26px,6.4vw,38px);
+  letter-spacing:-.035em;margin:0;line-height:1}
+.mast h1 em{font-style:normal;background:linear-gradient(100deg,var(--green),var(--cyan) 55%,var(--violet));
+  -webkit-background-clip:text;background-clip:text;color:transparent}
+.mast p{margin:2px 0 0;color:var(--muted);font-size:13.5px}
+
+/* ── nav ───────────────────────────────────────────────── */
+nav{display:flex;gap:6px;background:rgba(255,255,255,.7);backdrop-filter:blur(10px);
+  border:1px solid var(--line);border-radius:999px;padding:5px;margin-bottom:22px;box-shadow:var(--shadow)}
+nav button{flex:1;background:none;border:0;border-radius:999px;cursor:pointer;
+  font-family:var(--body);font-weight:700;font-size:14px;color:var(--muted);padding:11px 14px;
+  display:flex;align-items:center;justify-content:center;gap:7px;transition:color .2s,background .3s,box-shadow .3s}
+nav button[aria-current=true]{background:var(--ink);color:#fff;box-shadow:0 6px 16px -8px rgba(15,34,51,.8)}
+nav button b{font-family:var(--mono);font-size:11px;font-weight:500;background:rgba(15,34,51,.09);
+  border-radius:999px;padding:2px 7px;min-width:22px}
+nav button[aria-current=true] b{background:rgba(255,255,255,.22)}
+
+/* ── layout ────────────────────────────────────────────── */
+.grid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.08fr);gap:18px;align-items:start}
+@media(max-width:960px){.grid{grid-template-columns:1fr}}
+
+.card{background:var(--card);border-radius:var(--r);padding:18px;box-shadow:var(--shadow);
+  border:1px solid var(--line-2);position:relative;overflow:hidden;
+  animation:rise .55s cubic-bezier(.2,.7,.3,1) backwards}
+.card+.card{margin-top:16px}
+.card::before{content:"";position:absolute;inset:0 0 auto;height:4px;background:var(--tint,var(--green))}
+.card:nth-of-type(1){animation-delay:.04s}
+.card:nth-of-type(2){animation-delay:.10s}
+.card:nth-of-type(3){animation-delay:.16s}
+.card:nth-of-type(4){animation-delay:.22s}
+@keyframes rise{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}}
+
+.c-car{--tint:linear-gradient(90deg,var(--cyan),var(--green))}
+.c-chg{--tint:linear-gradient(90deg,var(--amber),#FFC062)}
+.c-win{--tint:linear-gradient(90deg,var(--green),#6FE3B6)}
+.c-pri{--tint:linear-gradient(90deg,var(--violet),#A79BFF)}
+.c-neutral{--tint:linear-gradient(90deg,#CBD8E2,#E5EDF2)}
+
+.eyebrow{font-family:var(--mono);font-size:10.5px;letter-spacing:.15em;text-transform:uppercase;
+  color:var(--muted);margin:2px 0 14px;display:flex;justify-content:space-between;align-items:center;gap:10px}
+.eyebrow b{color:var(--ink);font-weight:500;background:rgba(15,34,51,.05);padding:3px 9px;border-radius:999px;
+  letter-spacing:.05em;text-transform:none;font-size:11px;white-space:nowrap}
+
+/* ── form controls ─────────────────────────────────────── */
+label{display:flex;align-items:center;gap:6px;font-size:12px;font-weight:700;color:var(--muted);
+  margin-bottom:6px;letter-spacing:.01em}
+.info{flex:0 0 auto;width:17px;height:17px;border-radius:50%;border:0;cursor:pointer;padding:0;
+  background:#E4EBF0;color:var(--muted);font-family:var(--display);font-weight:700;font-size:11px;
+  line-height:17px;text-align:center;transition:background .18s,color .18s,transform .18s}
+.info:hover{background:var(--violet);color:#fff;transform:scale(1.15)}
+.info[aria-expanded=true]{background:var(--violet);color:#fff}
+.pop{position:fixed;z-index:70;width:min(310px,calc(100vw - 24px));background:var(--ink);color:#fff;
+  border-radius:14px;padding:14px 16px;box-shadow:0 18px 44px -14px rgba(15,34,51,.75);
+  animation:pop .18s cubic-bezier(.2,.8,.3,1)}
+.pop h4{font-family:var(--display);font-weight:700;font-size:14px;margin:0 0 6px;letter-spacing:-.01em}
+.pop p{margin:0;font-size:12.5px;line-height:1.6;color:rgba(255,255,255,.78)}
+.pop p+p{margin-top:8px}
+.pop code{font-family:var(--mono);font-size:11.5px;background:rgba(255,255,255,.14);
+  padding:1.5px 5px;border-radius:5px;color:#8DF0CE}
+@keyframes pop{from{opacity:0;transform:translateY(-6px) scale(.97)}to{opacity:1;transform:none}}
+input,select{width:100%;font-family:var(--body);font-size:16px;font-weight:500;color:var(--ink);
+  background:#F7FAFB;border:1.5px solid var(--line);border-radius:11px;padding:11px 12px;appearance:none;
+  transition:border-color .18s, background .18s, box-shadow .18s}
+input[type=number]{font-family:var(--mono);font-size:15px}
+select{background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='11' height='7'><path d='M1 1l4.5 5L10 1' stroke='%235C7489' stroke-width='1.8' fill='none' stroke-linecap='round'/></svg>");
+  background-repeat:no-repeat;background-position:right 12px center;padding-right:32px;cursor:pointer}
+input:hover,select:hover{border-color:#B9C9D6}
+input:focus,select:focus{outline:0;background:#fff;border-color:var(--green);box-shadow:0 0 0 4px rgba(0,179,126,.16)}
+button:focus-visible,summary:focus-visible{outline:2.5px solid var(--violet);outline-offset:2px}
+.row{display:grid;gap:13px}
+.row.two{grid-template-columns:1fr 1fr}
+.row+.row{margin-top:13px}
+@media(max-width:420px){.row.two{grid-template-columns:1fr}}
+.hint{font-size:11.5px;color:var(--faint);margin:6px 0 0;line-height:1.45}
+
+.plugfield{display:flex;gap:9px;align-items:flex-start}
+.plugfield>div:first-child{flex:1;min-width:0}
+.plugbox{flex:0 0 auto;width:46px;height:46px;border-radius:12px;background:var(--cyan-2);color:var(--cyan);
+  display:grid;place-items:center;margin-top:23px;transition:background .25s,color .25s}
+.plugbox svg{width:26px;height:26px}
+
+.btn{font-family:var(--body);font-weight:700;font-size:14px;padding:11px 18px;border-radius:11px;cursor:pointer;
+  border:0;background:var(--ink);color:#fff;transition:transform .14s,box-shadow .2s,background .2s;
+  box-shadow:0 6px 16px -8px rgba(15,34,51,.9)}
+.btn:hover{transform:translateY(-2px);box-shadow:0 10px 22px -10px rgba(15,34,51,.9)}
+.btn:active{transform:translateY(0)}
+.btn.go{background:linear-gradient(135deg,var(--green),var(--cyan));box-shadow:0 8px 20px -8px rgba(0,179,126,.85)}
+.btn.ghost{background:#fff;color:var(--ink);border:1.5px solid var(--line);box-shadow:none}
+.btn.ghost:hover{border-color:var(--green);color:var(--green)}
+.btn.quiet{background:#F1F5F7;color:var(--muted);box-shadow:none}
+.btn.quiet:hover{background:#E7EDF1;color:var(--ink)}
+.btn.danger{background:var(--coral-2);color:var(--coral);box-shadow:none}
+.btn.danger:hover{background:var(--coral);color:#fff}
+.btns{display:flex;gap:10px;flex-wrap:wrap;margin-top:16px}
+
+.seg{display:flex;background:#EFF4F6;border-radius:12px;padding:4px;gap:4px}
+.seg button{flex:1;border:0;background:none;border-radius:9px;cursor:pointer;padding:10px 6px;
+  font-family:var(--body);font-size:13px;font-weight:700;color:var(--muted);transition:all .22s}
+.seg button[aria-pressed=true]{background:#fff;color:var(--ink);box-shadow:0 2px 8px -2px rgba(15,34,51,.22)}
+
+/* ── sliders + window bar ──────────────────────────────── */
+.socwrap{display:grid;grid-template-columns:1fr 1fr;gap:18px}
+.socval{font-family:var(--display);font-weight:800;font-size:34px;letter-spacing:-.035em;line-height:1}
+.socval small{font-family:var(--mono);font-size:14px;font-weight:400;color:var(--faint);margin-left:2px}
+#socFromVal{color:var(--muted)} #socToVal{color:var(--green)}
+input[type=range]{-webkit-appearance:none;appearance:none;background:transparent;padding:0;border:0;
+  height:30px;margin-top:4px;box-shadow:none}
+input[type=range]:focus{box-shadow:none;background:transparent}
+input[type=range]::-webkit-slider-runnable-track{height:7px;border-radius:99px;background:#E2EAEF}
+input[type=range]::-moz-range-track{height:7px;border-radius:99px;background:#E2EAEF}
+input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:26px;height:26px;border-radius:50%;
+  background:#fff;border:5px solid var(--green);margin-top:-9.5px;cursor:grab;
+  box-shadow:0 3px 10px -2px rgba(0,179,126,.7);transition:transform .15s}
+input[type=range]::-moz-range-thumb{width:20px;height:20px;border-radius:50%;background:#fff;
+  border:5px solid var(--green);cursor:grab;box-shadow:0 3px 10px -2px rgba(0,179,126,.7)}
+input[type=range]::-webkit-slider-thumb:active{transform:scale(1.18);cursor:grabbing}
+#socFrom::-webkit-slider-thumb{border-color:var(--muted);box-shadow:0 3px 10px -2px rgba(92,116,137,.6)}
+#socFrom::-moz-range-thumb{border-color:var(--muted)}
+
+.winbar{height:34px;border-radius:11px;background:#EFF4F6;margin-top:16px;position:relative;overflow:hidden}
+.winbar span{position:absolute;top:0;bottom:0;background:linear-gradient(90deg,var(--green),var(--cyan));
+  transition:left .3s cubic-bezier(.2,.7,.3,1), width .3s cubic-bezier(.2,.7,.3,1)}
+.winbar span::after{content:"";position:absolute;inset:0;
+  background:repeating-linear-gradient(115deg,rgba(255,255,255,.26) 0 9px,transparent 9px 18px);
+  animation:slide 1.1s linear infinite}
+@keyframes slide{to{background-position:36px 0}}
+.winbar em{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
+  font-family:var(--mono);font-size:11px;font-weight:500;color:var(--ink);font-style:normal;
+  text-shadow:0 1px 3px rgba(255,255,255,.85)}
+
+.check{display:flex;gap:10px;align-items:flex-start;font-size:12.5px;cursor:pointer;margin-top:13px;
+  color:var(--muted);line-height:1.45}
+.check input{width:19px;height:19px;margin:1px 0 0;flex:0 0 auto;accent-color:var(--green);padding:0;border-radius:5px}
+.check b{color:var(--ink)}
+
+.helper{margin-top:14px;border-top:1px solid var(--line-2);padding-top:12px}
+.helper summary{font-size:12.5px;font-weight:700;color:var(--violet);cursor:pointer;list-style:none;
+  display:flex;align-items:center;gap:7px}
+.helper summary::-webkit-details-marker{display:none}
+.helper summary::before{content:"";width:16px;height:16px;border-radius:50%;background:var(--violet-2);
+  display:grid;place-items:center;box-shadow:inset 0 0 0 1.5px var(--violet);
+  transition:transform .25s;flex:0 0 auto}
+.helper[open] summary::before{transform:rotate(135deg)}
+.helper summary span{position:relative}
+
+.derived{margin-top:16px;background:linear-gradient(120deg,var(--green-2),var(--cyan-2));border-radius:12px;
+  padding:12px 14px;font-size:12.5px;color:#065F49;line-height:1.6}
+.derived b{font-family:var(--mono);font-weight:500;font-size:13px}
+.divider{display:flex;align-items:center;gap:12px;margin:20px 0 16px;font-family:var(--mono);
+  font-size:10px;letter-spacing:.16em;text-transform:uppercase;color:var(--faint)}
+.divider::before,.divider::after{content:"";height:1px;background:var(--line);flex:1}
+
+/* ── hero ──────────────────────────────────────────────── */
+.hero{background:linear-gradient(155deg,#12283C,#0F2233 55%,#182F4A);border-radius:20px;padding:18px;
+  color:#fff;box-shadow:var(--shadow-lg);overflow:hidden;position:relative;
+  animation:rise .6s cubic-bezier(.2,.7,.3,1) backwards}
+.hero::after{content:"";position:absolute;width:280px;height:280px;border-radius:50%;top:-140px;right:-90px;
+  background:radial-gradient(circle,rgba(0,179,126,.45),transparent 68%)}
+.scene{position:relative;z-index:1}
+.scene svg{width:100%;height:auto;display:block;max-height:190px}
+#flow{stroke-dasharray:2 9;animation:flow .9s linear infinite}
+@keyframes flow{to{stroke-dashoffset:-22}}
+#battFill{transition:width .5s cubic-bezier(.2,.7,.3,1)}
+#wheelA,#wheelB{transform-box:fill-box;transform-origin:center;animation:spin 3.4s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+.readout{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:14px;position:relative;z-index:1}
+.readout>div{background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.13);
+  border-radius:14px;padding:14px}
+.readout .k{font-family:var(--mono);font-size:10px;letter-spacing:.15em;text-transform:uppercase;
+  color:rgba(255,255,255,.55);display:flex;align-items:center;gap:6px}
+.readout .k i{width:7px;height:7px;border-radius:50%;display:block}
+.readout .v{font-family:var(--display);font-weight:800;font-size:clamp(26px,6.2vw,40px);
+  letter-spacing:-.045em;line-height:1.02;margin-top:8px}
+.readout .v small{font-family:var(--display);font-weight:700;font-size:.42em;
+  color:rgba(255,255,255,.5);margin-left:2px}
+.readout .sub{font-size:11.5px;color:rgba(255,255,255,.55);margin-top:6px;font-variant-numeric:tabular-nums}
+@media(max-width:400px){.readout{grid-template-columns:1fr}}
+
+/* ── stat tiles ────────────────────────────────────────── */
+.tiles{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}
+@media(max-width:1080px){.tiles{grid-template-columns:repeat(2,1fr)}}
+.tile{border-radius:13px;padding:12px 13px;background:#F7FAFB;position:relative;overflow:hidden;
+  transition:transform .18s, box-shadow .2s}
+.tile:hover{transform:translateY(-3px);box-shadow:var(--shadow)}
+.tile .tk{font-size:11px;font-weight:600;color:var(--muted);display:block;line-height:1.3;min-height:2.6em}
+.tile .tv{font-family:var(--display);font-weight:800;font-size:21px;letter-spacing:-.03em;display:block;margin-top:5px}
+.tile .tv small{font-family:var(--mono);font-size:11px;font-weight:400;margin-left:3px;opacity:.6}
+.t-green{background:var(--green-2)}  .t-green .tv{color:#048A62}
+.t-cyan{background:var(--cyan-2)}    .t-cyan .tv{color:#0A7E99}
+.t-amber{background:var(--amber-2)}  .t-amber .tv{color:#B86D00}
+.t-violet{background:var(--violet-2)}.t-violet .tv{color:#4B3BC7}
+.t-coral{background:var(--coral-2)}  .t-coral .tv{color:#C6293D}
+
+/* ── chart ─────────────────────────────────────────────── */
+.chart svg{width:100%;height:auto;display:block;overflow:visible}
+.chart rect.bar{transform-box:fill-box;transform-origin:bottom;animation:grow .5s cubic-bezier(.2,.8,.3,1) backwards}
+@keyframes grow{from{transform:scaleY(0);opacity:.2}to{transform:scaleY(1);opacity:1}}
+.chart path.trace{stroke-dasharray:1400;animation:draw 1.1s ease-out forwards}
+@keyframes draw{from{stroke-dashoffset:1400}to{stroke-dashoffset:0}}
+.legend{display:flex;gap:14px;flex-wrap:wrap;font-size:11px;color:var(--muted);margin-top:12px;font-weight:600}
+.legend i{display:inline-block;width:11px;height:11px;border-radius:3px;margin-right:5px;vertical-align:-1px}
+
+/* ── table ─────────────────────────────────────────────── */
+.scroller{overflow-x:auto;-webkit-overflow-scrolling:touch}
+table{width:100%;border-collapse:collapse;font-variant-numeric:tabular-nums;min-width:340px}
+th,td{text-align:right;padding:9px 6px;border-bottom:1px solid var(--line-2);font-size:13px}
+th{font-family:var(--mono);font-size:10px;letter-spacing:.11em;text-transform:uppercase;color:var(--faint);font-weight:500}
+th:first-child,td:first-child{text-align:left}
+td{font-family:var(--mono);font-weight:500}
+tbody tr{transition:background .15s}
+tbody tr:hover{background:var(--green-2)}
+tbody tr:last-child td{border-bottom:0}
+
+/* ── notes ─────────────────────────────────────────────── */
+.note{border-radius:12px;padding:12px 14px;font-size:12.5px;margin-top:12px;line-height:1.55;
+  background:var(--amber-2);color:#8A5200;border-left:4px solid var(--amber);
+  animation:rise .4s cubic-bezier(.2,.7,.3,1) backwards}
+.note.bad{background:var(--coral-2);color:#A3243A;border-left-color:var(--coral)}
+.note.ok{background:var(--green-2);color:#046B4E;border-left-color:var(--green)}
+
+/* ── garage ────────────────────────────────────────────── */
+.spec{font-size:11.5px;color:var(--muted);margin-top:12px;border-top:1px solid var(--line-2);
+  padding-top:12px;display:flex;flex-wrap:wrap;gap:7px}
+.spec span{background:#F1F5F7;border-radius:8px;padding:5px 10px;white-space:nowrap}
+.spec b{color:var(--ink);font-family:var(--mono);font-weight:500}
+.cars{display:grid;gap:13px}
+.carcard{background:#fff;border-radius:15px;padding:16px;box-shadow:var(--shadow);
+  border:1.5px solid var(--green);transition:transform .2s,box-shadow .2s;
+  animation:rise .45s cubic-bezier(.2,.7,.3,1) backwards}
+.carcard:hover{transform:translateY(-3px);box-shadow:var(--shadow-lg)}
+.carcard.inactive{border-color:var(--line-2)}
+.carcard h3{font-family:var(--display);font-weight:700;font-size:18px;letter-spacing:-.02em;margin:0;
+  display:flex;align-items:center;gap:9px;flex-wrap:wrap}
+.carcard .base{font-size:12.5px;color:var(--muted);margin:3px 0 0}
+.carcard .acts{display:flex;gap:8px;margin-top:14px;flex-wrap:wrap}
+.carcard .acts .btn{padding:8px 14px;font-size:13px}
+.pill{font-family:var(--mono);font-size:9.5px;letter-spacing:.11em;text-transform:uppercase;
+  background:linear-gradient(135deg,var(--green),var(--cyan));color:#fff;padding:4px 9px;border-radius:999px}
+.empty{border:2px dashed var(--line);border-radius:15px;padding:26px 18px;text-align:center}
+.empty svg{width:120px;height:auto;color:var(--faint);opacity:.7;margin-bottom:8px}
+.empty p{color:var(--muted);margin:0;font-size:13.5px}
+
+.ghead{display:flex;align-items:center;justify-content:space-between;gap:14px;margin-bottom:16px;flex-wrap:wrap}
+.ghead h2{font-family:var(--display);font-weight:800;font-size:24px;letter-spacing:-.03em;margin:0}
+.ghead p{margin:2px 0 0;color:var(--muted);font-size:13px}
+.cars{grid-template-columns:repeat(auto-fill,minmax(290px,1fr))}
+
+.modal{position:fixed;inset:0;z-index:50;display:grid;place-items:center;padding:18px;
+  background:rgba(15,34,51,.5);backdrop-filter:blur(5px);animation:fade .2s}
+@keyframes fade{from{opacity:0}to{opacity:1}}
+.sheet{background:#fff;border-radius:22px;width:min(660px,100%);max-height:min(88vh,940px);
+  display:flex;flex-direction:column;overflow:hidden;
+  box-shadow:0 30px 70px -20px rgba(15,34,51,.7);
+  animation:sheetIn .32s cubic-bezier(.2,.8,.3,1)}
+@keyframes sheetIn{from{opacity:0;transform:translateY(26px) scale(.97)}to{opacity:1;transform:none}}
+.sheet>header{display:flex;align-items:center;justify-content:space-between;gap:12px;
+  padding:18px 20px 14px;border-bottom:1px solid var(--line-2)}
+.sheet>header h2{font-family:var(--display);font-weight:800;font-size:20px;margin:0;letter-spacing:-.025em}
+.sheet .body{overflow-y:auto;padding:20px;flex:1;-webkit-overflow-scrolling:touch}
+.sheet>footer{padding:14px 20px;border-top:1px solid var(--line-2);display:flex;gap:10px;background:#F7FAFB}
+.sheet>footer .btn{flex:1}
+.x{width:36px;height:36px;border-radius:50%;border:0;background:#F1F5F7;color:var(--muted);
+  cursor:pointer;font-size:20px;line-height:1;transition:background .18s,color .18s}
+.x:hover{background:var(--coral-2);color:var(--coral)}
+@media(max-width:640px){
+  .modal{padding:0;align-items:end}
+  .sheet{border-radius:22px 22px 0 0;width:100%;max-height:93vh;
+    animation:sheetUp .32s cubic-bezier(.2,.8,.3,1)}
+  .sheet>footer{padding-bottom:calc(14px + env(safe-area-inset-bottom))}
+  @keyframes sheetUp{from{transform:translateY(100%)}to{transform:none}}
+}
+.sheet.small{width:min(430px,100%)}
+.btn.danger.solid{background:var(--coral);color:#fff;box-shadow:0 6px 16px -8px rgba(240,73,94,.9)}
+.btn.danger.solid:hover{background:#D93B50;color:#fff}
+
+.countdown{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px}
+.countdown>div{background:linear-gradient(135deg,var(--amber-2),#FFF8EF);border-radius:13px;padding:12px 14px}
+.countdown .k{font-size:10.5px;font-weight:600;color:#B86D00;display:block;letter-spacing:.02em}
+.countdown .v{font-family:var(--display);font-weight:800;font-size:clamp(20px,5vw,27px);
+  letter-spacing:-.03em;display:block;margin-top:3px;color:#8A5200;font-variant-numeric:tabular-nums}
+.sessbar{height:12px;border-radius:99px;background:#EFF4F6;overflow:hidden;margin-bottom:14px}
+.sessbar span{display:block;height:100%;width:0;border-radius:99px;
+  background:linear-gradient(90deg,var(--amber),var(--green));transition:width .12s linear}
+.sessgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(96px,1fr));gap:8px}
+.sessgrid div{background:#F7FAFB;border-radius:11px;padding:10px 11px}
+.sessgrid .k{font-size:10px;font-weight:600;color:var(--muted);display:block;letter-spacing:.02em}
+.sessgrid .v{font-family:var(--display);font-weight:800;font-size:17px;letter-spacing:-.02em;
+  display:block;margin-top:3px;font-variant-numeric:tabular-nums}
+.sessgrid .v small{font-family:var(--mono);font-size:10px;font-weight:400;opacity:.55;margin-left:2px}
+#cardSession.running{box-shadow:0 0 0 2px var(--amber), var(--shadow)}
+#cardSession.running .sessbar span{transition:width .1s linear}
+.foot{margin-top:26px;font-size:11.5px;color:var(--muted);line-height:1.65;
+  background:rgba(255,255,255,.55);border-radius:14px;padding:16px;border:1px solid var(--line-2)}
+.foot b{color:var(--ink)}
+
+/* ── mobile dock ───────────────────────────────────────── */
+.dock{position:fixed;left:12px;right:12px;bottom:12px;border-radius:16px;
+  background:rgba(15,34,51,.94);backdrop-filter:blur(14px);color:#fff;display:none;
+  padding:12px 18px;justify-content:space-between;align-items:center;gap:14px;z-index:30;
+  box-shadow:0 14px 34px -12px rgba(15,34,51,.9);
+  margin-bottom:env(safe-area-inset-bottom)}
+.dock div{font-family:var(--mono);font-size:9.5px;letter-spacing:.14em;text-transform:uppercase;opacity:.55}
+.dock b{display:block;font-family:var(--display);font-weight:800;font-size:23px;letter-spacing:-.035em;opacity:1;margin-top:2px}
+.dock b small{font-size:.45em;opacity:.55}
+@media(max-width:960px){body.calc .dock{display:flex;animation:rise .5s .5s backwards}}
+
+[hidden]{display:none !important}
+@media(prefers-reduced-motion:reduce){
+  *,*::before,*::after{animation:none !important;transition:none !important}
+}
+</style>
+</head>
+<body class="calc">
+
+<div class="aurora" aria-hidden="true"><i></i><i></i><i></i><u></u></div>
+
+<svg class="sprite" aria-hidden="true">
+  <symbol id="i-bolt" viewBox="0 0 24 24"><path d="M13 2 4 14h6l-1 8 9-12h-6z" fill="currentColor"/></symbol>
+  <symbol id="i-car" viewBox="0 0 300 150">
+    <path d="M38 108h224" stroke="currentColor" stroke-width="4" stroke-linecap="round" fill="none"/>
+    <path d="M56 100c-9 0-15-7-15-16v-14c0-9 7-16 16-16h12l22-25c4-5 10-7 16-7h64c7 0 13 3 17 8l18 24h14c11 0 20 9 20 20v10c0 9-6 16-15 16z"
+          fill="none" stroke="currentColor" stroke-width="5" stroke-linejoin="round"/>
+    <path d="M96 54h48V29h-32z" fill="currentColor" opacity=".22"/>
+    <circle cx="92" cy="100" r="16" fill="none" stroke="currentColor" stroke-width="5"/>
+    <circle cx="208" cy="100" r="16" fill="none" stroke="currentColor" stroke-width="5"/>
+  </symbol>
+  <symbol id="p-type1" viewBox="0 0 44 44">
+    <circle cx="22" cy="22" r="18.5" fill="none" stroke="currentColor" stroke-width="2.6"/>
+    <circle cx="15" cy="16" r="4" fill="currentColor"/><circle cx="29" cy="16" r="4" fill="currentColor"/>
+    <circle cx="13" cy="28" r="2.4" fill="currentColor"/><circle cx="22" cy="30" r="2.4" fill="currentColor"/>
+    <circle cx="31" cy="28" r="2.4" fill="currentColor"/>
+  </symbol>
+  <symbol id="p-type2" viewBox="0 0 44 44">
+    <path d="M4.5 15h35v6a17.5 17.5 0 0 1-35 0z" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linejoin="round"/>
+    <circle cx="13" cy="20" r="3.4" fill="currentColor"/><circle cx="22" cy="19" r="3.4" fill="currentColor"/>
+    <circle cx="31" cy="20" r="3.4" fill="currentColor"/>
+    <circle cx="15" cy="29" r="2.4" fill="currentColor"/><circle cx="22" cy="31" r="2.4" fill="currentColor"/>
+    <circle cx="29" cy="29" r="2.4" fill="currentColor"/>
+  </symbol>
+  <symbol id="p-gbtac" viewBox="0 0 44 44">
+    <circle cx="22" cy="22" r="18.5" fill="none" stroke="currentColor" stroke-width="2.6"/>
+    <circle cx="22" cy="13" r="3.2" fill="currentColor"/><circle cx="31" cy="18" r="3.2" fill="currentColor"/>
+    <circle cx="31" cy="28" r="3.2" fill="currentColor"/><circle cx="22" cy="32" r="3.2" fill="currentColor"/>
+    <circle cx="13" cy="28" r="3.2" fill="currentColor"/><circle cx="13" cy="18" r="3.2" fill="currentColor"/>
+    <circle cx="22" cy="22" r="2.4" fill="currentColor"/>
+  </symbol>
+  <symbol id="p-chademo" viewBox="0 0 44 44">
+    <circle cx="22" cy="22" r="18.5" fill="none" stroke="currentColor" stroke-width="2.6"/>
+    <circle cx="14.5" cy="19" r="5" fill="currentColor"/><circle cx="29.5" cy="19" r="5" fill="currentColor"/>
+    <circle cx="15" cy="30" r="2.2" fill="currentColor"/><circle cx="22" cy="32" r="2.2" fill="currentColor"/>
+    <circle cx="29" cy="30" r="2.2" fill="currentColor"/>
+  </symbol>
+  <symbol id="p-ccs2" viewBox="0 0 44 44">
+    <path d="M8 8h28v4a14 14 0 0 1-28 0z" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linejoin="round"/>
+    <circle cx="15" cy="12" r="2.6" fill="currentColor"/><circle cx="22" cy="11" r="2.6" fill="currentColor"/>
+    <circle cx="29" cy="12" r="2.6" fill="currentColor"/><circle cx="18" cy="19" r="2" fill="currentColor"/>
+    <circle cx="26" cy="19" r="2" fill="currentColor"/>
+    <circle cx="14.5" cy="33" r="6.5" fill="currentColor"/><circle cx="29.5" cy="33" r="6.5" fill="currentColor"/>
+  </symbol>
+  <symbol id="p-gbtdc" viewBox="0 0 44 44">
+    <circle cx="22" cy="22" r="18.5" fill="none" stroke="currentColor" stroke-width="2.6"/>
+    <circle cx="14" cy="16" r="4.6" fill="currentColor"/><circle cx="30" cy="16" r="4.6" fill="currentColor"/>
+    <circle cx="12" cy="28" r="2.2" fill="currentColor"/><circle cx="18.7" cy="30" r="2.2" fill="currentColor"/>
+    <circle cx="25.3" cy="30" r="2.2" fill="currentColor"/><circle cx="32" cy="28" r="2.2" fill="currentColor"/>
+    <circle cx="22" cy="22" r="2.2" fill="currentColor"/>
+  </symbol>
+</svg>
+
+<div class="wrap">
+
+  <header class="mast">
+    <div class="mark"><svg><use href="#i-bolt"/></svg></div>
+    <div>
+      <h1>Charge<em>.lk</em></h1>
+      <p>How long, and how much — for your car, your charger, your rate.</p>
+    </div>
+  </header>
+
+  <nav>
+    <button type="button" id="navCalc" aria-current="true">Calculate</button>
+    <button type="button" id="navGarage" aria-current="false">My cars <b id="carCount">0</b></button>
+  </nav>
+
+  <!-- ══════════ CALCULATE ══════════ -->
+  <div id="viewCalc">
+    <div class="grid">
+      <div>
+        <section class="card c-car">
+          <p class="eyebrow">Car <b id="vehTag">—</b></p>
+          <div id="carPick">
+            <label for="carSel">Which car are you charging?</label>
+            <select id="carSel"></select>
+            <div class="spec" id="carSpec"></div>
+          </div>
+          <div id="carNone" hidden>
+            <p class="hint" style="margin:0 0 14px;font-size:13px">No cars saved yet. Add one and it will be waiting here every time.</p>
+            <button type="button" class="btn go" id="goAdd">Add a car</button>
+          </div>
+        </section>
+
+        <section class="card c-chg" id="cardCharger">
+          <p class="eyebrow">Charger <b id="chgTag">—</b></p>
+          <div class="plugfield">
+            <div>
+              <label for="chgPlug">Charger socket</label>
+              <select id="chgPlug"></select>
+            </div>
+            <div class="plugbox" id="chgPlugIcon"></div>
+          </div>
+          <div class="row" style="margin-top:13px">
+            <div>
+              <label for="chargerKw">Charger output (kW)</label>
+              <input id="chargerKw" type="number" min="0.5" max="400" step="0.1" value="7.4">
+            </div>
+          </div>
+          <p class="hint">Printed on the unit or shown in the operator's app. A household socket is about 2.3 kW, a wallbox 7.4 kW. The car's own limit still applies.</p>
+          <details class="helper">
+            <summary><span>Advanced</span></summary>
+            <div class="row" style="margin-top:13px">
+              <div>
+                <label for="eff">Charging efficiency (%)</label>
+                <input id="eff" type="number" min="60" max="100" step="1" value="88">
+              </div>
+            </div>
+            <p class="hint">Set automatically — 88% on AC, 93% on DC. Leave it alone unless you have measured your own.</p>
+          </details>
+        </section>
+
+        <section class="card c-win" id="cardWindow">
+          <p class="eyebrow">Charge window <b id="winTag">—</b></p>
+          <div class="socwrap">
+            <div>
+              <label for="socFrom">Start at</label>
+              <div class="socval" id="socFromVal">20<small>%</small></div>
+              <input id="socFrom" type="range" min="0" max="99" step="1" value="20">
+            </div>
+            <div>
+              <label for="socTo">Charge to</label>
+              <div class="socval" id="socToVal">80<small>%</small></div>
+              <input id="socTo" type="range" min="1" max="100" step="1" value="80">
+            </div>
+          </div>
+          <div class="winbar"><span id="winFill"></span><em id="winLabel"></em></div>
+          <p class="hint">Stopping at 80% on a DC charger is not superstition — see the curve.</p>
+        </section>
+
+        <section class="card c-pri" id="cardPrice">
+          <p class="eyebrow">Price <b id="priceTag">—</b></p>
+          <div class="seg" id="billSeg" role="group" aria-label="How you are billed">
+            <button type="button" data-bill="unit" aria-pressed="true">Per unit</button>
+            <button type="button" data-bill="time" aria-pressed="false">Per hour</button>
+            <button type="button" data-bill="both" aria-pressed="false">Both</button>
+          </div>
+
+          <div id="unitBox" class="row" style="margin-top:13px">
+            <div class="row two">
+              <div>
+                <label for="rateKwh">Rate (LKR per kWh)</label>
+                <input id="rateKwh" type="number" min="0" step="0.01" value="80">
+              </div>
+              <div>
+                <label for="fee">Session fee (LKR)</label>
+                <input id="fee" type="number" min="0" step="1" value="0">
+              </div>
+            </div>
+            <label class="check">
+              <input type="checkbox" id="meterCar">
+              <span>Station meters energy <b>delivered to the car</b>, not drawn from the grid — usual for public DC chargers. Leave off for a home meter.</span>
+            </label>
+          </div>
+
+          <div id="timeBox" class="row" style="margin-top:13px" hidden>
+            <div class="row two">
+              <div>
+                <label for="rateHour">Rate (LKR per hour)</label>
+                <input id="rateHour" type="number" min="0" step="1" value="600">
+              </div>
+              <div>
+                <label for="fee2">Session fee (LKR)</label>
+                <input id="fee2" type="number" min="0" step="1" value="0">
+              </div>
+            </div>
+            <label class="check">
+              <input type="checkbox" id="roundUp">
+              <span>Round up to the next full hour, the way most hourly billing works.</span>
+            </label>
+            <p class="hint">Time-based pricing punishes slow-charging cars. If your car tops out below the charger's rating, you pay for capacity you never received.</p>
+          </div>
+
+          <p class="hint">Whatever your bill or the operator's app actually charges. Nothing is assumed.</p>
+        </section>
+      </div>
+
+      <div id="results">
+        <div class="hero">
+          <div class="scene">
+            <svg viewBox="0 0 520 200" role="img" aria-label="Charging illustration">
+              <defs>
+                <linearGradient id="gBatt" x1="0" x2="1">
+                  <stop offset="0" stop-color="#00B37E"/><stop offset="1" stop-color="#5EE0C0"/>
+                </linearGradient>
+                <linearGradient id="gCar" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0" stop-color="rgba(255,255,255,.20)"/>
+                  <stop offset="1" stop-color="rgba(255,255,255,.05)"/>
+                </linearGradient>
+              </defs>
+              <!-- charging post -->
+              <rect x="26" y="44" width="52" height="88" rx="13" fill="rgba(255,255,255,.10)" stroke="rgba(255,255,255,.28)" stroke-width="2"/>
+              <rect x="36" y="56" width="32" height="24" rx="6" fill="#0FA3C4" opacity=".85"/>
+              <g id="postBolt" transform="translate(43,60) scale(.72)" fill="#fff"><use href="#i-bolt"/></g>
+              <circle cx="52" cy="98" r="9" fill="none" stroke="rgba(255,255,255,.4)" stroke-width="2.5"/>
+              <rect x="34" y="132" width="36" height="8" rx="4" fill="rgba(255,255,255,.18)"/>
+              <!-- cable -->
+              <path id="flow" d="M78 92 C 128 92 128 146 178 146" fill="none" stroke="#5EE0C0"
+                    stroke-width="5" stroke-linecap="round"/>
+              <!-- car -->
+              <g stroke="rgba(255,255,255,.55)" stroke-width="3.5" fill="url(#gCar)" stroke-linejoin="round">
+                <path d="M186 146c-8 0-13-6-13-13v-12c0-8 6-14 14-14h10l19-22c3-4 8-6 13-6h56c6 0 11 2 15 7l15 21h12c10 0 18 8 18 18v8c0 8-5 13-13 13z"/>
+              </g>
+              <path d="M212 107h42V85h-28z" fill="rgba(255,255,255,.16)"/>
+              <circle id="wheelA" cx="220" cy="146" r="15" fill="none" stroke="rgba(255,255,255,.55)" stroke-width="4" stroke-dasharray="4 6"/>
+              <circle id="wheelB" cx="318" cy="146" r="15" fill="none" stroke="rgba(255,255,255,.55)" stroke-width="4" stroke-dasharray="4 6"/>
+              <!-- battery gauge -->
+              <rect x="368" y="52" width="132" height="46" rx="11" fill="rgba(255,255,255,.08)" stroke="rgba(255,255,255,.26)" stroke-width="2"/>
+              <rect x="500" y="66" width="8" height="18" rx="3" fill="rgba(255,255,255,.26)"/>
+              <rect id="battFill" x="374" y="58" width="60" height="34" rx="7" fill="url(#gBatt)"/>
+              <text id="battTxt" x="434" y="82" text-anchor="middle" font-family="IBM Plex Mono, monospace"
+                    font-size="19" fill="#fff" font-weight="500">—</text>
+              <text id="kwTxt" x="434" y="122" text-anchor="middle" font-family="IBM Plex Mono, monospace"
+                    font-size="13" fill="rgba(255,255,255,.6)">—</text>
+            </svg>
+          </div>
+
+          <div class="readout">
+            <div>
+              <div class="k"><i style="background:#5EE0C0"></i>Time to charge</div>
+              <div class="v" id="outTime">—</div>
+              <div class="sub" id="outTimeSub">—</div>
+            </div>
+            <div>
+              <div class="k"><i style="background:#A79BFF"></i>Cost</div>
+              <div class="v" id="outCost">—</div>
+              <div class="sub" id="outCostSub">—</div>
+            </div>
+          </div>
+        </div>
+
+        <section class="card c-chg" id="cardSession" style="margin-top:16px">
+          <p class="eyebrow">Charging session <b id="sessTag">not started</b></p>
+
+          <div class="countdown">
+            <div>
+              <span class="k">Ready at</span>
+              <span class="v" id="sessEta">—</span>
+            </div>
+            <div>
+              <span class="k">Time remaining</span>
+              <span class="v" id="sessLeft">—</span>
+            </div>
+          </div>
+
+          <div class="sessbar"><span id="sessFill"></span></div>
+          <div class="sessgrid" id="sessStats"></div>
+
+          <details class="helper" id="catchWrap">
+            <summary><span>Already charging? Start from where it is</span></summary>
+            <div class="seg" id="catchMode" role="group" aria-label="What you can see" style="margin-top:13px">
+              <button type="button" data-m="soc"  aria-pressed="true">Battery %</button>
+              <button type="button" data-m="kwh"  aria-pressed="false">kWh delivered</button>
+              <button type="button" data-m="mins" aria-pressed="false">Minutes so far</button>
+            </div>
+            <div class="row two" style="margin-top:13px">
+              <div>
+                <label for="catchVal" id="catchLabel">Battery percentage now</label>
+                <input id="catchVal" type="number" min="0" step="0.1" value="50">
+              </div>
+              <div style="align-self:end">
+                <button type="button" class="btn ghost" id="catchGo" style="width:100%">Start from here</button>
+              </div>
+            </div>
+            <div class="derived" id="catchPreview"></div>
+            <p class="hint">Read whichever figure your charger or car app gives you. kWh delivered is measured at the plug, so the conversion loss is taken off before it reaches the battery.</p>
+          </details>
+
+          <div class="btns">
+            <button type="button" class="btn go" id="sessPlay">Plug in &amp; start</button>
+            <button type="button" class="btn quiet" id="sessReset">Reset</button>
+          </div>
+
+          <details class="helper" id="sessOpts">
+            <summary><span>Alerts &amp; options</span></summary>
+            <div class="row two" style="margin-top:13px">
+              <div>
+                <label for="notifyMin">Warn me before it finishes</label>
+                <select id="notifyMin">
+                  <option value="5">5 minutes</option>
+                  <option value="10" selected>10 minutes</option>
+                  <option value="15">15 minutes</option>
+                  <option value="30">30 minutes</option>
+                  <option value="0">Only when it's done</option>
+                </select>
+              </div>
+              <div style="align-self:end">
+                <button type="button" class="btn ghost" id="notifyAsk" style="width:100%">Enable notifications</button>
+              </div>
+            </div>
+            <p class="hint" id="notifyState">Notifications are off. Turn them on and this will alert you before the charge finishes.</p>
+            <label class="check">
+              <input type="checkbox" id="keepAwake">
+              <span>Keep the screen on while charging. Most reliable way to get the alert on a phone — see the note below.</span>
+            </label>
+            <label class="check">
+              <input type="checkbox" id="demoSpeed">
+              <span>Demo speed (60&times;). For trying it out — a four-hour charge plays in four minutes. Turn off for a real session.</span>
+            </label>
+          </details>
+
+          <p class="hint">Runs in real time against your actual clock, and survives a reload — close the tab and come back and it picks up where it is. Changing an input above ends the session.</p>
+        </section>
+
+        <section class="card c-neutral">
+          <p class="eyebrow">Charge curve <b id="curveTag">—</b></p>
+          <div class="chart" id="chart"></div>
+          <div class="legend">
+            <span><i style="background:linear-gradient(135deg,#00B37E,#0FA3C4)"></i>Power in your window</span>
+            <span><i style="background:#DDE6EC"></i>Outside it</span>
+            <span><i style="background:#6C5CE7"></i>Time elapsed</span>
+          </div>
+          <div id="notes"></div>
+        </section>
+
+        <section class="card c-neutral">
+          <p class="eyebrow">The numbers</p>
+          <div class="tiles" id="facts"></div>
+        </section>
+
+        <section class="card c-neutral">
+          <p class="eyebrow">Segment breakdown</p>
+          <div class="scroller">
+            <table>
+              <thead><tr><th>SoC band</th><th>Avg power</th><th>Energy</th><th>Time</th></tr></thead>
+              <tbody id="segs"></tbody>
+            </table>
+          </div>
+        </section>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════ GARAGE ══════════ -->
+  <div id="viewGarage" hidden>
+    <div class="ghead">
+      <div>
+        <h2>Your garage</h2>
+        <p id="garageCount">—</p>
+      </div>
+      <button type="button" class="btn go" id="openAdd">+ Add a car</button>
+    </div>
+    <div class="cars" id="carList"></div>
+  </div>
+
+  <p class="foot">
+    <b>Read this before you rely on a number.</b> Catalogue figures are typical published values for models sold or imported into Sri Lanka, and they only ever prefill the form — the saved car is whatever you typed. Charging sockets in particular vary by source market, so check your own charge port rather than trusting the catalogue. Real battery capacity drops with age. The charge curve is a general model; your car, its battery temperature and the charger's own thermal limits all move it. Rates are yours to enter and nothing is assumed about who supplies your electricity.
+  </p>
+</div>
+
+
+<div class="modal" id="carModal" hidden>
+  <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+    <header>
+      <h2 id="modalTitle">Add a car</h2>
+      <button type="button" class="x" id="closeModal" aria-label="Close">&times;</button>
+    </header>
+    <div class="body">
+          <div class="row two">
+            <div>
+              <label for="brand">Start from a known model</label>
+              <select id="brand"></select>
+            </div>
+            <div>
+              <label for="model">Model &amp; battery</label>
+              <select id="model"></select>
+            </div>
+          </div>
+          <div class="btns" style="margin-top:13px">
+            <button type="button" class="btn ghost" id="fillFromCatalogue">Fill the fields below</button>
+          </div>
+
+          <div class="divider">or type it from your manual</div>
+
+          <div class="row">
+            <div>
+              <label for="fName">Name this car</label>
+              <input id="fName" type="text" placeholder="Leaf — the daily one" maxlength="40">
+            </div>
+          </div>
+          <div class="row two">
+            <div>
+              <label for="fUsable">Battery capacity (kWh)</label>
+              <input id="fUsable" type="number" min="1" max="250" step="0.1" value="39">
+              <p class="hint">Spec page of the manual. If it lists both total and usable, use usable.</p>
+            </div>
+            <div>
+              <label for="fRange">Range on a full charge (km)</label>
+              <input id="fRange" type="number" min="20" max="900" step="1" value="229">
+              <p class="hint">What you actually get, or what the dash reads at 100%.</p>
+            </div>
+          </div>
+
+          <div class="row two">
+            <div class="plugfield">
+              <div>
+                <label for="fAcPlug">AC charging socket</label>
+                <select id="fAcPlug"></select>
+                <p class="hint">Look at the charge port on the car.</p>
+              </div>
+              <div class="plugbox" id="fAcPlugIcon"></div>
+            </div>
+            <div>
+              <label for="fAc">AC charging power (kW)</label>
+              <input id="fAc" type="number" min="0.5" max="50" step="0.1" value="6.6">
+              <p class="hint">The manual calls this the on-board charger.</p>
+            </div>
+          </div>
+
+          <div class="row two" id="dcRow">
+            <div class="plugfield">
+              <div>
+                <label for="fDcPlug">Fast charging socket</label>
+                <select id="fDcPlug"></select>
+                <p class="hint">Pick "no DC socket" if the car cannot fast charge.</p>
+              </div>
+              <div class="plugbox" id="fDcPlugIcon"></div>
+            </div>
+            <div id="dcPowerWrap">
+              <label for="fDc">Fast charging power (kW)</label>
+              <input id="fDc" type="number" min="0" max="400" step="1" value="46">
+              <p class="hint">Quick-charging section of the manual.</p>
+            </div>
+          </div>
+
+          <details class="helper">
+            <summary><span>My manual gives charging time, not kW</span></summary>
+            <div class="row two" style="margin-top:13px">
+              <div>
+                <label for="fHours">Hours for a full charge</label>
+                <input id="fHours" type="number" min="0.5" max="40" step="0.5" value="6">
+              </div>
+              <div style="align-self:end">
+                <button type="button" class="btn ghost" id="fromHours" style="width:100%">Work out the kW</button>
+              </div>
+            </div>
+            <p class="hint">Manuals for smaller EVs often say "approx. 6 hours on a 220 V socket". Enter that and this fills the AC charging power figure.</p>
+          </details>
+
+      <div class="derived" id="derived"></div>
+      <div id="formNote"></div>
+      <p class="hint" style="margin-top:16px">Every field here is printed in your owner's manual or shown on the dashboard. An older battery holds less than the printed figure — if yours does, enter what it actually holds.</p>
+    </div>
+    <footer>
+      <button type="button" class="btn go" id="saveCar">Save car</button>
+      <button type="button" class="btn quiet" id="cancelEdit">Cancel</button>
+    </footer>
+  </div>
+</div>
+
+<div class="modal" id="confirmModal" hidden>
+  <div class="sheet small" role="alertdialog" aria-modal="true" aria-labelledby="confirmTitle">
+    <header>
+      <h2 id="confirmTitle">Delete this car?</h2>
+      <button type="button" class="x" id="confirmClose" aria-label="Close">&times;</button>
+    </header>
+    <div class="body"><p id="confirmBody" style="margin:0;font-size:14px;color:var(--muted);line-height:1.6"></p></div>
+    <footer>
+      <button type="button" class="btn danger solid" id="confirmYes">Delete</button>
+      <button type="button" class="btn quiet" id="confirmNo">Keep it</button>
+    </footer>
+  </div>
+</div>
+
+<div class="dock">
+  <div>Time<b id="dockTime">—</b></div>
+  <div style="text-align:right">Cost<b id="dockCost">—</b></div>
+</div>
+
+<script>
+
+/* ══════════════════════════════════════════════════════════════
+   1. REFERENCE DATA — catalogue only, used to prefill the car form
+   ══════════════════════════════════════════════════════════════ */
+
+/** Charging sockets. Which side of the plug is AC or DC is fixed by the standard. */
+const PLUGS = {
+  type1:   {label: "Type 1 (J1772)",     mode: "ac"},
+  type2:   {label: "Type 2 (Mennekes)",  mode: "ac"},
+  gbtac:   {label: "GB/T AC",            mode: "ac"},
+  chademo: {label: "CHAdeMO",            mode: "dc"},
+  ccs2:    {label: "CCS2",               mode: "dc"},
+  gbtdc:   {label: "GB/T DC",            mode: "dc"}
+};
+
+// [ name, battery kWh, real range km, AC kW, AC socket, DC kW (null = none), DC socket ]
+// Sockets differ by source market — a Japan-market car and a China-market one of the
+// same model can carry different plugs. Check your own charge port.
+const CATALOGUE = {
+  "Nissan": [
+    ["Leaf 24 kWh (ZE0 / AZE0)",      21.3, 129,  6.6, "type1",  46, "chademo"],
+    ["Leaf 30 kWh (AZE0)",            28.0, 170,  6.6, "type1",  46, "chademo"],
+    ["Leaf 40 kWh (ZE1)",             39.0, 229,  6.6, "type1",  46, "chademo"],
+    ["Leaf e+ 62 kWh (ZE1)",          56.0, 311,  6.6, "type1",  70, "chademo"],
+    ["Sakura 20 kWh",                 20.0, 160,  6.0, "type1",  30, "chademo"],
+    ["Ariya 63 kWh",                  63.0, 350,  7.4, "type1", 130, "chademo"]
+  ],
+  "BAW": [
+    ["E6",                            18.7, 170,  3.3, "type2", null, null],
+    ["E7",                            18.7, 170,  3.6, "type2", null, null],
+    ["E7 Pro",                        22.3, 185,  6.6, "type2",  40, "ccs2"]
+  ],
+  "BYD": [
+    ["Atto 3",                        60.5, 346,  7.0, "type2",  88, "ccs2"],
+    ["Dolphin (standard)",            44.9, 310,  7.0, "type2",  60, "ccs2"],
+    ["Dolphin (extended range)",      60.4, 403,  7.0, "type2",  80, "ccs2"],
+    ["Seal (RWD standard)",           61.4, 372, 11.0, "type2", 110, "ccs2"],
+    ["Seal (AWD / long range)",       82.5, 458, 11.0, "type2", 150, "ccs2"],
+    ["Seal U / Song Plus EV",         71.8, 378, 11.0, "type2", 115, "ccs2"],
+    ["e6",                            71.7, 377,  6.6, "type2",  60, "ccs2"]
+  ],
+  "MG": [
+    ["ZS EV 44.5 kWh (2019-21)",      42.5, 243,  6.6, "type2",  76, "ccs2"],
+    ["ZS EV 51 kWh",                  49.0, 288, 11.0, "type2",  76, "ccs2"],
+    ["ZS EV 72 kWh long range",       68.3, 379, 11.0, "type2",  92, "ccs2"],
+    ["MG4 51 kWh",                    50.8, 328,  6.6, "type2",  88, "ccs2"],
+    ["MG4 64 kWh",                    61.7, 386, 11.0, "type2", 140, "ccs2"]
+  ],
+  "Wuling": [
+    ["Air EV 17 kWh",                 17.3, 165,  6.6, "type2", null, null],
+    ["Air EV 27 kWh",                 26.7, 243,  6.6, "type2", null, null],
+    ["Binguo EV 38 kWh",              37.9, 303,  6.6, "type2",  40, "ccs2"],
+    ["Cloud EV 51 kWh",               50.6, 349,  6.6, "type2",  60, "ccs2"]
+  ],
+  "Tesla": [
+    ["Model 3 RWD",                   57.5, 397, 11.0, "type2", 170, "ccs2"],
+    ["Model 3 Long Range",            75.0, 500, 11.0, "type2", 250, "ccs2"],
+    ["Model Y RWD",                   57.5, 371, 11.0, "type2", 170, "ccs2"],
+    ["Model Y Long Range",            75.0, 455, 11.0, "type2", 250, "ccs2"]
+  ],
+  "Hyundai": [
+    ["Ioniq Electric 28 kWh",         28.0, 207,  6.6, "type2",  44, "ccs2"],
+    ["Ioniq Electric 38 kWh",         38.3, 274,  7.2, "type2",  44, "ccs2"],
+    ["Kona Electric 39 kWh",          39.2, 261,  7.2, "type2",  44, "ccs2"],
+    ["Kona Electric 64 kWh",          64.0, 400,  7.2, "type2",  77, "ccs2"],
+    ["Ioniq 5 58 kWh",                58.0, 331, 11.0, "type2", 175, "ccs2"],
+    ["Ioniq 5 77 kWh",                77.4, 430, 11.0, "type2", 233, "ccs2"]
+  ],
+  "Kia": [
+    ["Soul EV 64 kWh",                64.0, 388,  7.2, "type2",  77, "ccs2"],
+    ["Niro EV 64 kWh",                64.0, 400,  7.2, "type2",  77, "ccs2"],
+    ["EV6 77 kWh",                    77.4, 430, 11.0, "type2", 233, "ccs2"]
+  ],
+  "Toyota": [
+    ["bZ4X 64 kWh",                   64.0, 366,  6.6, "type2", 150, "ccs2"]
+  ],
+  "BMW / Mini": [
+    ["i3 94Ah (33 kWh)",              27.2, 175,  7.4, "type2",  49, "ccs2"],
+    ["i3 120Ah (42 kWh)",             37.9, 245, 11.0, "type2",  49, "ccs2"],
+    ["Mini Cooper SE",                28.9, 175, 11.0, "type2",  49, "ccs2"]
+  ],
+  "GAC Aion": [
+    ["Aion Y Plus",                   63.2, 372,  6.6, "type2",  90, "ccs2"],
+    ["Aion ES",                       55.4, 369,  6.6, "type2",  60, "ccs2"]
+  ],
+  "Others": [
+    ["Neta V",                        38.5, 275,  6.6, "type2",  60, "ccs2"],
+    ["Peugeot e-208",                 45.0, 290,  7.4, "type2", 100, "ccs2"],
+    ["Dacia / Renault Spring",        26.8, 214,  6.6, "type2",  30, "ccs2"],
+    ["Volvo XC40 Recharge",           69.0, 329, 11.0, "type2", 150, "ccs2"],
+    ["Zeekr X",                       64.0, 366, 11.0, "type2", 150, "ccs2"],
+    ["Audi e-tron 55",                86.5, 360, 11.0, "type2", 150, "ccs2"],
+    ["DFSK EC35 van",                 41.9, 210,  6.6, "gbtac",  40, "gbtdc"]
+  ]
+};
+
+// Charge tapering: [socStart, socEnd, fraction of peak power]
+const CURVES = {
+  dc: [[0,10,0.85],[10,50,1.00],[50,70,0.85],[70,80,0.65],[80,90,0.45],[90,100,0.22]],
+  ac: [[0,90,1.00],[90,95,0.85],[95,100,0.55]]
+};
+
+/* ══════════════════════════════════════════════════════════════
+   2. ENGINE — pure functions, no DOM
+   ══════════════════════════════════════════════════════════════ */
+
+/** Power multiplier at a given state of charge. */
+function taperAt(soc, mode){
+  const c = CURVES[mode];
+  for (const [a,b,f] of c) if (soc >= a && soc < b) return f;
+  return c[c.length-1][2];
+}
+
+/** Energy per km, derived from the two figures the driver can actually read. */
+function consumption(car){ return car.usable * 1000 / car.range; }
+
+/** Power a charger of `hours` full-charge time must be delivering. */
+function powerFromChargeTime(usableKwh, hours, efficiency){
+  return usableKwh / (hours * efficiency / 100);
+}
+
+/** What the car accepts on this connection type. Null/0 means not possible. */
+function acceptRate(car, mode){ return mode === "dc" ? car.dc : car.ac; }
+
+/** State of charge after `t` hours, read off the simulated trace. */
+function socAt(sim, socFrom, t){
+  const tr = sim.trace;
+  if (!tr.length) return socFrom;
+  if (t >= sim.hours) return tr[tr.length-1].soc;
+  let lo = 0, hi = tr.length - 1;
+  while (lo < hi){ const mid = (lo+hi) >> 1; if (tr[mid].hours < t) lo = mid+1; else hi = mid; }
+  const b = tr[lo], a = lo ? tr[lo-1] : {soc: socFrom, hours: 0};
+  const span = b.hours - a.hours;
+  return span > 0 ? a.soc + (b.soc - a.soc) * ((t - a.hours) / span) : b.soc;
+}
+
+/** How long it takes to reach `soc` — the inverse of socAt. */
+function timeAtSoc(sim, socFrom, soc){
+  if (soc <= socFrom) return 0;
+  const tr = sim.trace;
+  for (let i = 0; i < tr.length; i++){
+    if (tr[i].soc >= soc){
+      const a = i ? tr[i-1] : {soc: socFrom, hours: 0}, b = tr[i];
+      const span = b.soc - a.soc;
+      return span > 0 ? a.hours + (b.hours - a.hours) * ((soc - a.soc) / span) : b.hours;
+    }
+  }
+  return sim.hours;
+}
+
+/** The socket the car uses for this connection type. */
+function carPlug(car, mode){ return mode === "dc" ? car.dcPlug : car.acPlug; }
+
+function simulate({usableKwh, socFrom, socTo, chargerKw, vehMaxKw, mode, efficiency}){
+  const rated = Math.min(chargerKw, vehMaxKw);
+  const step  = 0.25;
+  const eff   = efficiency / 100;
+  const trace = [];
+  let hours = 0, peakKw = 0;
+
+  for (let soc = socFrom; soc < socTo - 1e-9; soc += step){
+    const span      = Math.min(step, socTo - soc);
+    const plugKw    = rated * taperAt(soc, mode);
+    const batteryKw = plugKw * eff;
+    hours += (usableKwh * span / 100) / batteryKw;
+    peakKw = Math.max(peakKw, plugKw);
+    trace.push({soc: soc + span, kw: plugKw, hours});
+  }
+
+  const energyBattery = usableKwh * (socTo - socFrom) / 100;
+  const energyGrid    = energyBattery / eff;
+
+  const segments = CURVES[mode].map(([a,b,f]) => {
+    const lo = Math.max(a, socFrom), hi = Math.min(b, socTo);
+    if (hi <= lo) return null;
+    const kwh  = usableKwh * (hi - lo) / 100;
+    const plug = rated * f;
+    return {from: lo, to: hi, kw: plug, kwh, hours: kwh / (plug * eff)};
+  }).filter(Boolean);
+
+  return {rated, hours, peakKw, energyBattery, energyGrid,
+          losses: energyGrid - energyBattery,
+          avgKw: hours > 0 ? energyGrid / hours : 0, segments, trace};
+}
+
+function priceSession(sim, {billMode, rateKwh, rateHour, fee, meterCar, roundUp}){
+  const billedKwh   = meterCar ? sim.energyBattery : sim.energyGrid;
+  const billedHours = roundUp ? Math.ceil(sim.hours) : sim.hours;
+  const unit = (billMode === "unit" || billMode === "both") ? billedKwh * rateKwh : 0;
+  const time = (billMode === "time" || billMode === "both") ? billedHours * rateHour : 0;
+  return {unit, time, fee, total: unit + time + fee, billedKwh, billedHours};
+}
+
+/* ══════════════════════════════════════════════════════════════
+   3. STORAGE — cars survive across sessions, degrades quietly
+   ══════════════════════════════════════════════════════════════ */
+
+const DB = (() => {
+  const KEY = "charge.lk.v1";
+  const ws  = (typeof window !== "undefined" && window.storage) ? window.storage : null;
+  let memory = null;
+  return {
+    async load(){
+      try{
+        if (ws){ const r = await ws.get(KEY); return r ? JSON.parse(r.value) : null; }
+        const raw = localStorage.getItem(KEY);
+        return raw ? JSON.parse(raw) : null;
+      }catch(e){ return memory; }
+    },
+    async save(data){
+      memory = data;
+      try{
+        if (ws) await ws.set(KEY, JSON.stringify(data));
+        else localStorage.setItem(KEY, JSON.stringify(data));
+      }catch(e){ /* memory only for this session */ }
+    }
+  };
+})();
+
+/* ══════════════════════════════════════════════════════════════
+   4. UI
+   ══════════════════════════════════════════════════════════════ */
+
+const $ = id => document.getElementById(id);
+const state = {mode:"ac", billMode:"unit", cars:[], activeId:null, editingId:null};
+
+const lkr = n => "Rs " + n.toLocaleString("en-LK", {maximumFractionDigits:0});
+const num = (n,d=1) => n.toLocaleString("en-LK", {minimumFractionDigits:d, maximumFractionDigits:d});
+function hm(h){
+  if (!isFinite(h) || h <= 0) return "—";
+  const t = Math.round(h*60), H = Math.floor(t/60), M = t%60;
+  return H ? `${H}<small>h</small> ${String(M).padStart(2,"0")}<small>m</small>` : `${M}<small>min</small>`;
+}
+function hmPlain(h){
+  if (!isFinite(h) || h <= 0) return "—";
+  const t = Math.round(h*60), H = Math.floor(t/60), M = t%60;
+  return H ? `${H}h ${String(M).padStart(2,"0")}m` : `${M}min`;
+}
+const CALM = !!(window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches);
+
+/** Socket icon markup. Shape matches the real port so it can be recognised on the car. */
+const plugIcon = (key, cls = "") =>
+  key && PLUGS[key] ? `<svg class="${cls}" viewBox="0 0 44 44" aria-hidden="true"><use href="#p-${key}"/></svg>` : "";
+
+function paintPlugIcon(boxId, selId){
+  const v = $(selId).value;
+  $(boxId).innerHTML = v && v !== "none" ? plugIcon(v) : `<span style="color:var(--faint);font-size:18px">—</span>`;
+}
+
+/** Roll a headline number to its new value instead of snapping. */
+function countTo(el, to, fmt){
+  const from = Number(el.dataset.val ?? 0);
+  el.dataset.val = to;
+  if (CALM || !isFinite(from) || Math.abs(to - from) < 0.01){ el.innerHTML = fmt(to); return; }
+  const t0 = performance.now(), ms = 420;
+  cancelAnimationFrame(+el.dataset.raf || 0);
+  const tick = now => {
+    const p = Math.min(1, (now - t0) / ms);
+    const eased = 1 - Math.pow(1 - p, 3);
+    el.innerHTML = fmt(from + (to - from) * eased);
+    if (p < 1) el.dataset.raf = requestAnimationFrame(tick);
+  };
+  el.dataset.raf = requestAnimationFrame(tick);
+}
+
+const escapeHtml = s => String(s).replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const activeCar = () => state.cars.find(c => c.id === state.activeId) || state.cars[0] || null;
+
+/* --- static selects --- */
+Object.keys(CATALOGUE).forEach(b => $("brand").add(new Option(b,b)));
+
+// Socket lists: the car form splits them by mode, the charger form offers all of them.
+Object.entries(PLUGS).forEach(([k,p]) => {
+  if (p.mode === "ac") $("fAcPlug").add(new Option(p.label, k));
+  else                 $("fDcPlug").add(new Option(p.label, k));
+  $("chgPlug").add(new Option(`${p.label} — ${p.mode.toUpperCase()}`, k));
+});
+$("fDcPlug").add(new Option("No DC socket", "none"));
+$("chgPlug").value = "type2";
+["fAcPlug","fDcPlug","chgPlug"].forEach(id => {
+  const box = id + "Icon";
+  $(id).addEventListener("change", () => paintPlugIcon(box, id));
+});
+
+function fillModels(){
+  const sel = $("model"); sel.innerHTML = "";
+  CATALOGUE[$("brand").value].forEach((m,i) => sel.add(new Option(m[0], i)));
+}
+$("brand").onchange = fillModels;
+$("brand").value = "Nissan"; fillModels(); $("model").value = "2";
+
+$("fillFromCatalogue").onclick = () => {
+  const [name, kwh, range, ac, acPlug, dc, dcPlug] = CATALOGUE[$("brand").value][+$("model").value];
+  if (!$("fName").value.trim()) $("fName").value = `${$("brand").value} ${name}`;
+  $("fUsable").value  = kwh;
+  $("fRange").value   = range;
+  $("fAc").value      = ac;
+  $("fAcPlug").value  = acPlug;
+  $("fDc").value      = dc === null ? "" : dc;
+  $("fDcPlug").value  = dcPlug ?? "none";
+  syncDcField();
+  showDerived();
+  openCarModal();
+};
+
+/** The DC power field is meaningless without a DC socket, so it only appears with one. */
+function syncDcField(){
+  paintPlugIcon("fDcPlugIcon", "fDcPlug");
+  paintPlugIcon("fAcPlugIcon", "fAcPlug");
+  const has = $("fDcPlug").value !== "none";
+  $("dcPowerWrap").hidden = !has;
+  $("dcRow").style.gridTemplateColumns = has ? "" : "1fr";
+}
+$("fDcPlug").onchange = syncDcField;
+
+/** Live readout of what the two figures imply, so nothing is hidden. */
+function showDerived(){
+  const kwh = +$("fUsable").value, range = +$("fRange").value;
+  if (!(kwh > 0 && range > 0)){ $("derived").innerHTML = ""; return; }
+  $("derived").innerHTML =
+    `From those two figures: <b>${Math.round(kwh*1000/range)} Wh/km</b>. ` +
+    `That is what the cost-per-km and range-added numbers use.`;
+}
+["fUsable","fRange"].forEach(id => $(id).oninput = showDerived);
+
+$("fromHours").onclick = () => {
+  const kwh = +$("fUsable").value, hours = +$("fHours").value;
+  if (!(kwh > 0 && hours > 0)) return;
+  $("fAc").value = powerFromChargeTime(kwh, hours, 88).toFixed(1);
+};
+
+
+
+/* --- field explanations ------------------------------------------
+   Keyed by the id of the control the label points at. Injected rather
+   than written into the markup so every field is guaranteed one and
+   the wording lives in a single place. ------------------------------ */
+const INFO = {
+  carSel: ["Which car", "Everything below is calculated from the car you pick here — its battery, its sockets and its charging limits. Add or change cars under My cars."],
+  brand:  ["Catalogue", "A shortcut for filling the fields below with typical published figures. Nothing from the catalogue is saved directly: the car you save is whatever the fields say once you have finished editing them."],
+  model:  ["Model &amp; battery", "The same model often ships with several battery sizes, and with different sockets depending on the market it was built for. Pick the closest match, then correct anything that does not match your car."],
+  fName:  ["Name", "Just a label so you can tell your cars apart in the list. \u201CLeaf \u2014 the daily one\u201D is more use than \u201CNissan Leaf 2\u201D."],
+  fUsable:["Battery capacity", "How much energy your pack holds, in kWh, from the spec page of the manual. If it lists both a gross and a usable figure, use <b>usable</b> \u2014 manufacturers keep a buffer at each end that you never get to touch.",
+           "Charging time and energy cost both scale directly off this number. An older pack holds less than the printed figure, so enter what yours actually holds."],
+  fRange: ["Range on a full charge", "How far the car goes from 100% in your real driving. Use what the dash shows at 100%, not the brochure\u2019s WLTP, NEDC or CLTC figure \u2014 those are lab numbers and typically 20\u201340% optimistic.",
+           "Together with capacity this gives your Wh/km, which is what <b>range added</b> and <b>cost per km</b> are built on."],
+  fAcPlug:["AC charging socket", "The connector shape on your car\u2019s charge port. Look at the car \u2014 this is the one spec you do not need a manual for.",
+           "Type 1 is usual on used Japanese imports, Type 2 on most cars sold new through local agents, GB/T on some China-market vehicles. A charger with a different socket will not physically connect."],
+  fAc:    ["AC charging power", "The ceiling of your car\u2019s <b>on-board charger</b> \u2014 the converter inside the car that turns wall AC into DC for the battery. It is fixed by the car, not by what you plug into. Whichever is lower, this or the charger\u2019s output, sets your actual speed.",
+           "If your dash shows volts and amps, multiply them: <code>26 A \u00d7 120 V = 3.1 kW</code>. If that voltage is the battery\u2019s rather than the mains\u2019, divide by 0.88 to get the AC figure this field wants."],
+  fDcPlug:["Fast charging socket", "The DC connector, if the car has one. CHAdeMO on Japanese imports, CCS2 on most others, GB/T on some Chinese models.",
+           "Choose <b>no DC socket</b> for cars that can only charge on AC \u2014 small city EVs often cannot fast charge at all."],
+  fDc:    ["Fast charging power", "The peak your battery will accept from a DC charger, which bypasses the on-board charger and feeds the pack directly.",
+           "It is a peak, not a constant. It only holds through the middle of the charge and falls away sharply above 80%."],
+  fHours: ["Full-charge time from the manual", "Smaller EVs often publish charging as hours rather than kW \u2014 \u201Capprox. 6 hours on a 220 V socket\u201D. Enter that figure and the button converts it to kW, allowing for conversion losses."],
+  chgPlug:["Charger socket", "The connector on the unit you are plugging into. This also decides whether the session is AC or DC, because the standards are fixed: Type 1, Type 2 and GB/T AC are alternating current; CHAdeMO, CCS2 and GB/T DC are direct.",
+           "If it does not match your car\u2019s socket you will get a warning with the results."],
+  chargerKw:["Charger output", "The unit\u2019s rated power, printed on it or shown in the operator\u2019s app. A household socket is about 2.3 kW, a portable lead 3.7, a wallbox 7.4, three-phase 11 or 22. Public DC starts around 25 kW.",
+           "Your car\u2019s own limit still caps this \u2014 a 22 kW wallbox into a 6.6 kW car delivers 6.6 kW."],
+  eff:    ["Charging efficiency", "How much of the energy coming off the meter actually reaches the cells. The rest becomes heat in the conversion, the cabling and the battery\u2019s thermal management. Roughly 88% on AC and 93% on DC, set automatically.",
+           "This is why <b>drawn from the grid</b> is always higher than <b>into the battery</b>, and why your effective rate per kWh is higher than the rate you typed in."],
+  socFrom:["Start at", "The state of charge you are plugging in at \u2014 whatever the dash reads right now."],
+  socTo:  ["Charge to", "Where you intend to stop. On a DC charger 80% is the usual stopping point: past it the charging rate collapses, and the last 20% can take as long as the first 60%."],
+  rateKwh:["Rate per kWh", "What you pay for a unit of electricity, from your bill or the operator\u2019s app.",
+           "By default it is applied to energy <b>drawn from the grid</b>, because that is what a meter counts. Tick the box below if the station instead bills what it delivered to the car."],
+  fee:    ["Session fee", "Any flat connection or session charge added on top, regardless of how long you stay or how much you take. Leave it at zero if there is not one."],
+  rateHour:["Rate per hour", "What you pay per hour plugged in, regardless of energy delivered. Slow-charging cars do badly on this \u2014 you are paying for the charger\u2019s time rather than its output."],
+  catchVal: ["Starting mid-charge", "If you forgot to start the session when you plugged in, give whatever figure you can see and this works out where the charge has got to.",
+             "<b>Battery %</b> if the car or its app shows state of charge. <b>kWh delivered</b> from the charger\u2019s display \u2014 measured at the plug, so the conversion loss is deducted before it counts toward the battery. <b>Minutes</b> if all you know is when you plugged in."],
+  fee2:   ["Session fee", "Any flat connection or session charge added on top, regardless of how long you stay. Leave it at zero if there is not one."]
+};
+
+const pop = document.createElement("div");
+pop.className = "pop"; pop.hidden = true; pop.setAttribute("role","dialog");
+document.body.appendChild(pop);
+let popFor = null;
+
+function closePop(){
+  if (!popFor) return;
+  popFor.setAttribute("aria-expanded","false");
+  popFor = null; pop.hidden = true;
+}
+function openPop(btn){
+  const [title, ...paras] = INFO[btn.dataset.k];
+  pop.innerHTML = `<h4>${title}</h4>` + paras.map(p => `<p>${p}</p>`).join("");
+  pop.hidden = false;
+  popFor = btn; btn.setAttribute("aria-expanded","true");
+
+  const r = btn.getBoundingClientRect(), box = pop.getBoundingClientRect();
+  const pad = 12;
+  let left = Math.min(Math.max(pad, r.left - 10), window.innerWidth - box.width - pad);
+  let top  = r.bottom + 9;
+  if (top + box.height > window.innerHeight - pad) top = Math.max(pad, r.top - box.height - 9);
+  pop.style.left = left + "px";
+  pop.style.top  = top + "px";
+}
+
+/** Every labelled control with an entry gets a button, so none is missed. */
+function attachInfo(){
+  document.querySelectorAll("label[for]").forEach(l => {
+    const k = l.getAttribute("for");
+    if (!INFO[k] || l.querySelector(".info")) return;
+    const b = document.createElement("button");
+    b.type = "button"; b.className = "info"; b.dataset.k = k;
+    b.textContent = "i";
+    b.setAttribute("aria-expanded","false");
+    b.setAttribute("aria-label", `What is ${l.textContent.trim()}?`);
+    l.appendChild(b);
+  });
+}
+document.addEventListener("click", e => {
+  const b = e.target.closest(".info");
+  if (b){ e.preventDefault(); b === popFor ? closePop() : openPop(b); return; }
+  if (!e.target.closest(".pop")) closePop();
+});
+document.addEventListener("keydown", e => {
+  if (e.key !== "Escape") return;
+  if (popFor) { closePop(); return; }        // one layer at a time
+  if (!$("confirmModal").hidden) { closeConfirm(); return; }
+  closeCarModal();
+});
+document.addEventListener("scroll", closePop, {passive:true, capture:true});
+window.addEventListener("resize", closePop);
+
+/* --- views --- */
+function show(view){
+  const calc = view === "calc";
+  $("viewCalc").hidden   = !calc;
+  $("viewGarage").hidden = calc;
+  $("navCalc").setAttribute("aria-current", String(calc));
+  $("navGarage").setAttribute("aria-current", String(!calc));
+  document.body.classList.toggle("calc", calc);
+  closeCarModal();
+  window.scrollTo({top:0});
+}
+$("navCalc").onclick   = () => show("calc");
+$("navGarage").onclick = () => show("garage");
+$("goAdd").onclick     = () => { show("garage"); resetForm(); openCarModal(); };
+
+/* --- the car form lives in a modal --------------------------------
+   Opened for a new car or an existing one; the form itself does not
+   know the difference beyond what resetForm/editCar put in it. ----- */
+let lastFocus = null;
+
+function openCarModal(){
+  lastFocus = document.activeElement;
+  $("carModal").hidden = false;
+  document.body.style.overflow = "hidden";
+  setTimeout(() => $("fName").focus(), 70);
+}
+function closeCarModal(){
+  if ($("carModal").hidden) return;
+  closePop();
+  $("carModal").hidden = true;
+  document.body.style.overflow = "";
+  if (lastFocus && lastFocus.focus) lastFocus.focus();
+}
+$("openAdd").onclick    = () => { resetForm(); openCarModal(); };
+$("closeModal").onclick = closeCarModal;
+$("carModal").onclick   = e => { if (e.target === $("carModal")) closeCarModal(); };
+
+/* --- confirmation ------------------------------------------------- */
+let confirmAction = null;
+
+function askConfirm(title, body, yesLabel, fn){
+  $("confirmTitle").textContent = title;
+  $("confirmBody").textContent  = body;
+  $("confirmYes").textContent   = yesLabel;
+  confirmAction = fn;
+  $("confirmModal").hidden = false;
+  document.body.style.overflow = "hidden";
+  setTimeout(() => $("confirmNo").focus(), 70);   // safe option gets focus
+}
+function closeConfirm(){
+  if ($("confirmModal").hidden) return;
+  $("confirmModal").hidden = true;
+  confirmAction = null;
+  if ($("carModal").hidden) document.body.style.overflow = "";
+}
+$("confirmNo").onclick    = closeConfirm;
+$("confirmClose").onclick = closeConfirm;
+$("confirmModal").onclick = e => { if (e.target === $("confirmModal")) closeConfirm(); };
+$("confirmYes").onclick   = () => { const f = confirmAction; closeConfirm(); if (f) f(); };
+
+/* --- live session -------------------------------------------------
+   Real time, driven by wall-clock timestamps rather than frame counts,
+   so throttling, sleeping and reloads cannot make it drift. The whole
+   session is persisted, so closing the tab does not lose it. -------- */
+const SESS_KEY = "charge.lk.session";
+let sess = null;        // {startedAt, pausedAt, pausedMs, notified, demo, p}
+let sessTimer = 0;
+let wakeLock = null;
+
+const nowMs = () => Date.now();
+
+/** Elapsed charge-hours, accounting for pauses and the demo multiplier. */
+function sessElapsedHours(){
+  if (!sess) return 0;
+  const end = sess.pausedAt || nowMs();
+  const ms = end - sess.startedAt - sess.pausedMs;
+  return Math.max(0, ms / 3600000) * (sess.demo ? 60 : 1);
+}
+function sessFinishMs(){
+  if (!sess) return 0;
+  const need = sess.sim.hours * 3600000 / (sess.demo ? 60 : 1);
+  return sess.startedAt + sess.pausedMs + need + (sess.pausedAt ? nowMs() - sess.pausedAt : 0);
+}
+const clockAt = ms => new Date(ms).toLocaleTimeString([], {hour:"2-digit", minute:"2-digit"});
+
+async function saveSess(){
+  const {sim, ...rest} = sess || {};
+  try{
+    if (sess) await DB.save({...(await DB.load() || {}), session: rest});
+    else { const d = await DB.load() || {}; delete d.session; await DB.save(d); }
+  }catch(e){ /* best effort */ }
+}
+
+function sessStop(quiet){
+  if (sessTimer) clearInterval(sessTimer);
+  sessTimer = 0;
+  releaseWake();
+  if (!quiet && sess && !sess.pausedAt){
+    sess.pausedAt = nowMs();
+    $("sessTag").textContent = "paused";
+    $("sessPlay").textContent = "Resume";
+    saveSess();
+  }
+  $("cardSession").classList.remove("running");
+}
+
+function sessClear(){
+  if (sessTimer) clearInterval(sessTimer);
+  sessTimer = 0; sess = null;
+  releaseWake();
+  $("cardSession").classList.remove("running");
+  $("sessPlay").textContent = "Plug in & start";
+  $("sessTag").textContent  = "not started";
+  $("sessFill").style.width = "0%";
+  $("sessEta").textContent  = "—";
+  $("sessLeft").textContent = "—";
+  paintSess(null);
+  saveSess();
+  if (activeCar()) paintHero(lastSim, +$("socFrom").value, +$("socTo").value);
+}
+
+function paintSess(snap){
+  const rows = snap ? [
+    ["Elapsed",         hmPlain(snap.t)],
+    ["State of charge", num(snap.soc,0) + '<small>%</small>'],
+    ["Power now",       num(snap.kw,1)  + '<small>kW</small>'],
+    ["Into battery",    num(snap.kwh,1) + '<small>kWh</small>'],
+    ["Cost so far",     lkr(snap.cost)]
+  ] : [["Elapsed","—"],["State of charge","—"],["Power now","—"],["Into battery","—"],["Cost so far","—"]];
+  $("sessStats").innerHTML = rows
+    .map(([k,v]) => `<div><span class="k">${k}</span><span class="v">${v}</span></div>`).join("");
+}
+
+/* --- notifications ------------------------------------------------ */
+function notifyState(){
+  const el = $("notifyState");
+  if (!("Notification" in window)){
+    el.textContent = "This browser cannot show notifications. The on-screen countdown still works.";
+    $("notifyAsk").disabled = true; return;
+  }
+  if (Notification.permission === "granted"){
+    el.textContent = "Notifications are on. You will get an alert before the charge finishes and again when it is done.";
+    $("notifyAsk").textContent = "Notifications on";
+    $("notifyAsk").disabled = true;
+  } else if (Notification.permission === "denied"){
+    el.textContent = "Notifications are blocked for this site. Allow them in your browser's site settings to get alerts.";
+    $("notifyAsk").disabled = true;
+  } else {
+    el.textContent = "Notifications are off. Turn them on and this will alert you before the charge finishes.";
+  }
+}
+$("notifyAsk").onclick = async () => {
+  if (!("Notification" in window)) return;
+  try{ await Notification.requestPermission(); }catch(e){}
+  notifyState();
+};
+
+async function fire(title, body){
+  if (!("Notification" in window) || Notification.permission !== "granted") return;
+  const opts = {body, icon:"icon-192.png", badge:"icon-192.png", tag:"charge-lk",
+                renotify:true, requireInteraction:true};
+  try{
+    const reg = navigator.serviceWorker && await navigator.serviceWorker.getRegistration();
+    if (reg && reg.showNotification) await reg.showNotification(title, opts);
+    else new Notification(title, opts);
+  }catch(e){ try{ new Notification(title, opts); }catch(_){} }
+  if (navigator.vibrate) navigator.vibrate([200,100,200]);
+}
+
+/* --- screen wake lock --------------------------------------------- */
+async function requestWake(){
+  if (!$("keepAwake").checked || !("wakeLock" in navigator)) return;
+  try{ wakeLock = await navigator.wakeLock.request("screen"); }catch(e){}
+}
+function releaseWake(){ if (wakeLock){ try{ wakeLock.release(); }catch(e){} wakeLock = null; } }
+document.addEventListener("visibilitychange", () => {
+  if (document.visibilityState === "visible"){
+    if (sess && !sess.pausedAt){ requestWake(); tick(); }
+  }
+});
+
+/* --- the tick ------------------------------------------------------ */
+function tick(){
+  if (!sess) return;
+  const sim = sess.sim, p = sess.p;
+  const t   = Math.min(sessElapsedHours(), sim.hours);
+  const done = t >= sim.hours - 1e-9;
+
+  const soc  = socAt(sim, p.socFrom, t);
+  const kw   = done ? 0 : sim.rated * taperAt(soc, p.mode);
+  const kwh  = p.usableKwh * (soc - p.socFrom) / 100;
+  const cost = priceSession({energyBattery: kwh, energyGrid: kwh / (p.eff/100), hours: t}, p.price).total;
+
+  $("sessFill").style.width = (100 * t / sim.hours).toFixed(2) + "%";
+  paintSess({t, soc, kw, kwh, cost});
+  $("battFill").setAttribute("width", Math.max(120 * (soc - p.socFrom) / 100, 2).toFixed(1));
+  $("battTxt").textContent = num(soc,0) + "%";
+  $("kwTxt").textContent   = num(kw,1) + " kW";
+
+  const finish = sessFinishMs();
+  $("sessEta").textContent  = done ? "done" : clockAt(finish);
+  $("sessLeft").textContent = done ? "—" : hmPlain((finish - nowMs()) / 3600000);
+
+  // alerts
+  const warnMin = +sess.notifyMin || 0;
+  if (!done && warnMin && !sess.notified.warn && (finish - nowMs()) <= warnMin*60000){
+    sess.notified.warn = true; saveSess();
+    fire(`${p.carName} is nearly charged`,
+         `About ${warnMin} minutes left \u2014 ${num(soc,0)}% now, stopping at ${p.socTo}%.`);
+  }
+  if (done && !sess.notified.done){
+    sess.notified.done = true; saveSess();
+    fire(`${p.carName} is charged`,
+         `Reached ${p.socTo}% \u2014 ${num(kwh,1)} kWh added, about ${lkr(cost)}.`);
+  }
+
+  if (done){
+    if (sessTimer) clearInterval(sessTimer);
+    sessTimer = 0; releaseWake();
+    $("cardSession").classList.remove("running");
+    $("sessTag").textContent  = "complete";
+    $("sessPlay").textContent = "Start again";
+  }
+}
+
+function sessRun(){
+  if (sessTimer) clearInterval(sessTimer);
+  sessTimer = setInterval(tick, 1000);
+  $("cardSession").classList.add("running");
+  $("sessTag").textContent  = "charging";
+  $("sessPlay").textContent = "Pause";
+  requestWake();
+  tick();
+}
+
+$("sessPlay").onclick = () => {
+  // running -> pause
+  if (sess && !sess.pausedAt && sessTimer){ sessStop(); return; }
+  // paused -> resume
+  if (sess && sess.pausedAt){
+    sess.pausedMs += nowMs() - sess.pausedAt;
+    sess.pausedAt = null;
+    saveSess(); sessRun(); return;
+  }
+  // fresh start
+  if (!lastSim || !lastCtx) return;
+  sess = {
+    startedAt: nowMs(), pausedAt: null, pausedMs: 0,
+    notified: {warn:false, done:false},
+    demo: $("demoSpeed").checked,
+    notifyMin: +$("notifyMin").value,
+    p: {...lastCtx, carName: activeCar().name},
+    sim: lastSim
+  };
+  saveSess(); sessRun();
+};
+$("sessReset").onclick = sessClear;
+
+/* --- catching up on a charge already in progress -------------------
+   Turns whatever the charger app shows into elapsed charge-hours, then
+   backdates the session so the countdown is correct from that point. */
+let catchMode = "soc";
+
+const CATCH_LABEL = {
+  soc:  "Battery percentage now",
+  kwh:  "kWh delivered so far",
+  mins: "Minutes charging so far"
+};
+
+/** Elapsed hours implied by the figure the user has, or null if unusable. */
+function catchElapsed(){
+  if (!lastSim || !lastCtx) return null;
+  const v = +$("catchVal").value;
+  if (!isFinite(v) || v < 0) return null;
+  const p = lastCtx;
+
+  if (catchMode === "mins") return Math.min(v / 60, lastSim.hours);
+
+  let soc;
+  if (catchMode === "soc") soc = v;
+  else {
+    // Charger apps report energy at the plug; only part of it reaches the cells.
+    const intoBattery = v * (p.eff / 100);
+    soc = p.socFrom + intoBattery / p.usableKwh * 100;
+  }
+  if (soc < p.socFrom - 0.01) return {err: `That is below your ${p.socFrom}% starting point. Adjust the start slider, or check the figure.`};
+  if (soc >= p.socTo) return {err: `That is already at or past your ${p.socTo}% target — the charge is done.`};
+  return timeAtSoc(lastSim, p.socFrom, soc);
+}
+
+function catchPreview(){
+  const box = $("catchPreview"), r = catchElapsed();
+  if (r === null){ box.textContent = "Pick a car first."; return; }
+  if (r && r.err){ box.textContent = r.err; return; }
+  const p = lastCtx, soc = socAt(lastSim, p.socFrom, r);
+  const left = lastSim.hours - r;
+  box.innerHTML = `About <b>${num(soc,0)}%</b> now \u2014 <b>${hmPlain(left)}</b> still to go, `
+                + `ready around <b>${clockAt(Date.now() + left*3600000)}</b>.`;
+}
+
+$("catchMode").onclick = e => {
+  const b = e.target.closest("button"); if (!b) return;
+  catchMode = b.dataset.m;
+  [...$("catchMode").children].forEach(x => x.setAttribute("aria-pressed", String(x === b)));
+  $("catchLabel").firstChild.nodeValue = CATCH_LABEL[catchMode];
+  const inp = $("catchVal");
+  inp.value = catchMode === "soc" ? Math.round((lastCtx ? (lastCtx.socFrom + lastCtx.socTo)/2 : 50))
+            : catchMode === "kwh" ? 5 : 30;
+  inp.step = catchMode === "mins" ? 1 : 0.1;
+  catchPreview();
+};
+$("catchVal").oninput = catchPreview;
+
+$("catchGo").onclick = () => {
+  const r = catchElapsed();
+  if (r === null || (r && r.err)) return;
+  sess = {
+    startedAt: nowMs() - r * 3600000 / ($("demoSpeed").checked ? 60 : 1),
+    pausedAt: null, pausedMs: 0,
+    notified: {warn:false, done:false},
+    demo: $("demoSpeed").checked,
+    notifyMin: +$("notifyMin").value,
+    p: {...lastCtx, carName: activeCar().name},
+    sim: lastSim
+  };
+  $("catchWrap").open = false;
+  saveSess(); sessRun();
+};
+$("notifyMin").onchange = () => { if (sess){ sess.notifyMin = +$("notifyMin").value; saveSess(); } };
+$("keepAwake").onchange = () => $("keepAwake").checked ? requestWake() : releaseWake();
+
+/** Rebuild a session saved before the page was reloaded. */
+function restoreSession(saved){
+  if (!saved || !saved.p) return;
+  const p = saved.p;
+  const sim = simulate({usableKwh:p.usableKwh, socFrom:p.socFrom, socTo:p.socTo,
+                        chargerKw:p.chargerKw, vehMaxKw:p.vehMaxKw, mode:p.mode, efficiency:p.eff});
+  sess = {...saved, sim};
+  $("notifyMin").value = String(sess.notifyMin ?? 10);
+  $("demoSpeed").checked = !!sess.demo;
+  if (sess.pausedAt){
+    $("sessTag").textContent = "paused";
+    $("sessPlay").textContent = "Resume";
+    tick();
+  } else sessRun();
+}
+
+/* --- garage --- */
+function resetForm(){
+  state.editingId = null;
+  $("modalTitle").textContent = "Add a car";
+  $("saveCar").textContent = "Save car";
+  $("fName").value = "";
+  $("fUsable").value = 39;      $("fRange").value = 229;
+  $("fAc").value = 6.6;         $("fAcPlug").value = "type1";
+  $("fDc").value = 46;          $("fDcPlug").value = "chademo";
+  $("fHours").value = 6;
+  syncDcField();
+  $("formNote").innerHTML = "";
+  showDerived();
+}
+$("cancelEdit").onclick = () => { resetForm(); closeCarModal(); };
+
+$("saveCar").onclick = async () => {
+  const name   = $("fName").value.trim();
+  const usable = +$("fUsable").value;
+  const range  = +$("fRange").value;
+  const ac     = +$("fAc").value;
+  const acPlug = $("fAcPlug").value;
+  const dcPlug = $("fDcPlug").value === "none" ? null : $("fDcPlug").value;
+  const dcRaw  = $("fDc").value.trim();
+  const dc     = (!dcPlug || dcRaw === "" || +dcRaw === 0) ? null : +dcRaw;
+
+  const problems = [];
+  if (!name) problems.push("Give the car a name so you can tell it apart from the next one.");
+  if (!(usable > 0)) problems.push("Battery capacity must be above zero.");
+  if (!(range > 0)) problems.push("Range on a full charge must be above zero.");
+  if (!(ac > 0)) problems.push("AC charging power must be above zero — every EV charges on AC.");
+  if (dcPlug && !(dc > 0)) problems.push("You picked a DC socket, so give its power in kW — or set the socket to none.");
+  if (problems.length){
+    $("formNote").innerHTML = `<div class="note bad">${problems.join(" ")}</div>`;
+    return;
+  }
+
+  if (state.editingId){
+    const car = state.cars.find(c => c.id === state.editingId);
+    if (car) Object.assign(car, {name, usable, range, ac, acPlug, dc, dcPlug});
+  } else {
+    const id = "c" + Date.now().toString(36);
+    state.cars.push({id, name, usable, range, ac, acPlug, dc, dcPlug});
+    state.activeId = id;
+  }
+  resetForm();
+  closeCarModal();
+  await persist();
+  renderGarage(); renderCarPicker(); render();
+};
+
+function editCar(id){
+  const c = state.cars.find(x => x.id === id); if (!c) return;
+  state.editingId = id;
+  $("modalTitle").textContent = "Edit car";
+  $("saveCar").textContent = "Update car";
+  $("fName").value = c.name; $("fUsable").value = c.usable; $("fRange").value = c.range;
+  $("fAc").value = c.ac;     $("fAcPlug").value = c.acPlug;
+  $("fDc").value = c.dc ?? ""; $("fDcPlug").value = c.dcPlug ?? "none";
+  syncDcField();
+  $("formNote").innerHTML = "";
+  showDerived();
+  openCarModal();
+}
+
+function deleteCar(id){
+  const c = state.cars.find(x => x.id === id); if (!c) return;
+  askConfirm("Delete this car?",
+    `${c.name} will be removed from your garage. This cannot be undone, but you can always add it again.`,
+    "Delete", () => reallyDeleteCar(id));
+}
+
+async function reallyDeleteCar(id){
+  state.cars = state.cars.filter(c => c.id !== id);
+  if (state.activeId === id) state.activeId = state.cars.length ? state.cars[0].id : null;
+  if (state.editingId === id) resetForm();
+  await persist();
+  renderGarage(); renderCarPicker(); render();
+}
+
+async function useCar(id){
+  state.activeId = id;
+  await persist();
+  renderGarage(); renderCarPicker(); render(); show("calc");
+}
+
+function renderGarage(){
+  $("carCount").textContent    = state.cars.length;
+  $("garageCount").textContent = state.cars.length
+    ? `${state.cars.length} car${state.cars.length > 1 ? "s" : ""} saved on this device`
+    : "Nothing saved yet";
+
+  if (!state.cars.length){
+    $("carList").innerHTML =
+      `<div class="empty"><svg viewBox="0 0 300 150" aria-hidden="true"><use href="#i-car"/></svg>
+       <p>No cars yet. Add one and it will be waiting here every time you open this.</p></div>`;
+    return;
+  }
+  $("carList").innerHTML = state.cars.map(c => {
+    const on = c.id === state.activeId;
+    return `<article class="carcard ${on ? "" : "inactive"}">
+      <h3>${escapeHtml(c.name)}${on ? '<span class="pill">In use</span>' : ""}</h3>
+      <p class="base">${num(c.usable,1)} kWh · ${c.range} km on a full charge</p>
+      <div class="spec">
+        <span>AC <b>${num(c.ac,1)} kW ${PLUGS[c.acPlug].label}</b></span>
+        <span>Fast <b>${c.dc ? num(c.dc,0)+" kW "+PLUGS[c.dcPlug].label : "no DC socket"}</b></span>
+        <span>Works out at <b>${Math.round(consumption(c))} Wh/km</b></span>
+      </div>
+      <div class="acts">
+        ${on ? "" : `<button type="button" class="btn ghost" data-use="${c.id}">Use this car</button>`}
+        <button type="button" class="btn quiet" data-edit="${c.id}">Edit</button>
+        <button type="button" class="btn danger" data-del="${c.id}">Delete</button>
+      </div>
+    </article>`;
+  }).join("");
+}
+$("carList").onclick = e => {
+  const b = e.target.closest("button"); if (!b) return;
+  if (b.dataset.use)  useCar(b.dataset.use);
+  if (b.dataset.edit) editCar(b.dataset.edit);
+  if (b.dataset.del)  deleteCar(b.dataset.del);
+};
+
+/* --- car picker on the calculator --- */
+function renderCarPicker(){
+  const has = state.cars.length > 0;
+  $("carPick").hidden = !has;
+  $("carNone").hidden = has;
+  ["cardCharger","cardWindow","cardPrice","results"].forEach(id => $(id).hidden = !has);
+  if (!has){ $("vehTag").textContent = "none saved"; return; }
+
+  const sel = $("carSel"); sel.innerHTML = "";
+  state.cars.forEach(c => sel.add(new Option(c.name, c.id)));
+  if (!state.cars.some(c => c.id === state.activeId)) state.activeId = state.cars[0].id;
+  sel.value = state.activeId;
+
+  const c = activeCar();
+  $("carSpec").innerHTML =
+    `<span>Battery <b>${num(c.usable,1)} kWh</b></span>
+     <span>Range <b>${c.range} km</b></span>
+     <span>AC <b>${num(c.ac,1)} kW ${PLUGS[c.acPlug].label}</b></span>
+     <span>Fast <b>${c.dc ? num(c.dc,0)+" kW "+PLUGS[c.dcPlug].label : "no DC socket"}</b></span>`;
+}
+$("carSel").onchange = async e => {
+  state.activeId = e.target.value;
+  await persist();
+  renderCarPicker(); renderGarage(); render();
+};
+
+/* --- inputs --- */
+$("chgPlug").onchange = e => {
+  paintPlugIcon("chgPlugIcon", "chgPlug");
+  state.mode = PLUGS[e.target.value].mode;
+  $("eff").value = state.mode === "dc" ? 93 : 88;
+  render();
+};
+$("billSeg").onclick = e => {
+  const b = e.target.closest("button"); if (!b) return;
+  state.billMode = b.dataset.bill;
+  [...$("billSeg").children].forEach(x => x.setAttribute("aria-pressed", String(x === b)));
+  $("unitBox").hidden = state.billMode === "time";
+  $("timeBox").hidden = state.billMode === "unit";
+  render();
+};
+$("socFrom").oninput = () => {
+  if (+$("socFrom").value >= +$("socTo").value) $("socTo").value = Math.min(100, +$("socFrom").value + 1);
+  render();
+};
+$("socTo").oninput = () => {
+  if (+$("socTo").value <= +$("socFrom").value) $("socFrom").value = Math.max(0, +$("socTo").value - 1);
+  render();
+};
+["eff","chargerKw","rateKwh","rateHour","fee","fee2"].forEach(id => $(id).oninput = render);
+["meterCar","roundUp"].forEach(id => $(id).onchange = render);
+
+async function persist(){
+  const cur = await DB.load() || {};
+  await DB.save({...cur, cars: state.cars, activeId: state.activeId});
+}
+
+/* --- chart --- */
+function drawChart(sim, socFrom, socTo, mode){
+  const W=560, H=210, PL=42, PR=48, PT=16, PB=28;
+  const iw=W-PL-PR, ih=H-PT-PB;
+  const rated = sim.rated || 1, maxKw = rated*1.06, maxH = Math.max(sim.hours, 1e-4);
+  const x = soc => PL + iw*soc/100;
+
+  let bars = "", i = 0;
+  for (let s=0; s<100; s+=2){
+    const kw  = rated*taperAt(s+1, mode);
+    const inW = (s+2) > socFrom && s < socTo;
+    const h   = Math.max(ih*kw/maxKw, 2);
+    const d   = CALM ? 0 : (i++ * 0.008);
+    bars += `<rect class="bar" x="${x(s).toFixed(1)}" y="${(PT+ih-h).toFixed(1)}" rx="1.6" `
+         +  `width="${(iw*2/100-1.6).toFixed(1)}" height="${h.toFixed(1)}" `
+         +  `fill="${inW?'url(#cBar)':'#DDE6EC'}" style="animation-delay:${d.toFixed(3)}s"/>`;
+  }
+  const line = sim.trace.length
+    ? "M" + sim.trace.map(p => `${x(p.soc).toFixed(1)},${(PT+ih*(1-p.hours/maxH)).toFixed(1)}`).join("L")
+    : "";
+  const ticks = [0,25,50,75,100].map(t =>
+    `<text x="${x(t)}" y="${H-8}" text-anchor="middle" font-family="IBM Plex Mono,monospace" font-size="10" fill="#93A6B6">${t}%</text>`).join("");
+
+  return `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Charging power and elapsed time across state of charge">
+    <defs>
+      <linearGradient id="cBar" x1="0" y1="1" x2="0" y2="0">
+        <stop offset="0" stop-color="#0FA3C4"/><stop offset="1" stop-color="#00B37E"/>
+      </linearGradient>
+    </defs>
+    <line x1="${PL}" y1="${PT+ih}" x2="${PL+iw}" y2="${PT+ih}" stroke="#DDE6EC" stroke-width="1.5"/>
+    ${bars}
+    ${line ? `<path class="trace" d="${line}" fill="none" stroke="#6C5CE7" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"/>` : ""}
+    <text x="${PL-7}" y="${PT+8}" text-anchor="end" font-family="IBM Plex Mono,monospace" font-size="10" fill="#93A6B6">${num(maxKw,0)} kW</text>
+    <text x="${PL-7}" y="${PT+ih}" text-anchor="end" font-family="IBM Plex Mono,monospace" font-size="10" fill="#93A6B6">0</text>
+    <text x="${PL+iw+7}" y="${PT+8}" font-family="IBM Plex Mono,monospace" font-size="10" fill="#6C5CE7">${hmPlain(sim.hours)}</text>
+    <text x="${PL+iw+7}" y="${PT+ih}" font-family="IBM Plex Mono,monospace" font-size="10" fill="#6C5CE7">0</text>
+    ${ticks}
+  </svg>`;
+}
+
+/* --- the hero scene reacts to the numbers --- */
+function paintHero(sim, socFrom, socTo){
+  if (sessTimer) return;            // the session owns the gauge while it runs
+  const X0 = 374, WMAX = 120;
+  const f = $("battFill");
+  f.setAttribute("x", (X0 + WMAX * socFrom / 100).toFixed(1));
+  f.setAttribute("width", Math.max(WMAX * (socTo - socFrom) / 100, 3).toFixed(1));
+  $("battTxt").textContent = `${socFrom}\u2192${socTo}%`;
+  $("kwTxt").textContent = sim ? `${num(sim.rated,1)} kW` : "—";
+  // faster charging, faster electrons
+  const flow = $("flow");
+  flow.setAttribute("stroke", state.mode === "dc" ? "#F59200" : "#5EE0C0");
+  if (sim && !CALM){
+    const secs = Math.max(0.25, Math.min(2.4, 9 / Math.max(sim.rated, 1)));
+    flow.style.animationDuration = secs.toFixed(2) + "s";
+  }
+}
+
+/* --- the window bar under the sliders --- */
+function paintWindow(socFrom, socTo){
+  $("winFill").style.left  = socFrom + "%";
+  $("winFill").style.width = (socTo - socFrom) + "%";
+  $("winLabel").textContent = `${socTo - socFrom} percentage points`;
+  $("winTag").textContent = `${socFrom}% \u2192 ${socTo}%`;
+}
+
+/* --- main render --- */
+let lastSim = null, lastCtx = null;
+
+function render(){
+  const car = activeCar();
+  if (!car) return;
+  if (sess) sessClear();            // a changed input invalidates a running session
+
+  const socFrom = +$("socFrom").value, socTo = +$("socTo").value;
+  $("socFromVal").innerHTML = socFrom + "<small>%</small>";
+  $("socToVal").innerHTML   = socTo   + "<small>%</small>";
+  paintWindow(socFrom, socTo);
+
+  const usableKwh = car.usable;
+  const chargerKw = +$("chargerKw").value || 0;
+  const vehMaxKw  = acceptRate(car, state.mode);
+  $("vehTag").textContent = `${num(usableKwh,1)} kWh`;
+
+  const plugChosen = $("chgPlug").value;
+  const plugNeeded = carPlug(car, state.mode);
+
+  if (state.mode === "dc" && !vehMaxKw){
+    ["outTime","outCost","outTimeSub","outCostSub","dockTime","dockCost"].forEach(id => $(id).textContent = "—");
+    $("chart").innerHTML = ""; $("segs").innerHTML = ""; $("facts").innerHTML = "";
+    $("chgTag").textContent = "no DC socket";
+    lastSim = null; lastCtx = null;
+    $("sessTag").textContent = "unavailable"; $("sessFill").style.width = "0%"; paintSess(null);
+    paintHero(null, socFrom, socTo);
+    $("notes").innerHTML = `<div class="note bad">${escapeHtml(car.name)} has no DC socket on record, so it can only charge on AC. Pick an AC socket above, or set its fast charging socket under My cars.</div>`;
+    return;
+  }
+  if (chargerKw <= 0 || usableKwh <= 0) return;
+
+  const sim = simulate({usableKwh, socFrom, socTo, chargerKw, vehMaxKw,
+                        mode: state.mode, efficiency: +$("eff").value || 90});
+  const priceOpts = {
+    billMode: state.billMode,
+    rateKwh: +$("rateKwh").value || 0,
+    rateHour: +$("rateHour").value || 0,
+    fee: (state.billMode === "time" ? +$("fee2").value : +$("fee").value) || 0,
+    meterCar: $("meterCar").checked,
+    roundUp: $("roundUp").checked
+  };
+  const cost = priceSession(sim, priceOpts);
+
+  // hand the session everything it needs to replay this exact run
+  lastSim = sim;
+  lastCtx = {socFrom, socTo, usableKwh, chargerKw, vehMaxKw, mode: state.mode,
+             eff: +$("eff").value || 90, price: priceOpts};
+  catchPreview();
+  if (!sess){
+    $("sessFill").style.width = "0%";
+    $("sessEta").textContent  = "—";
+    $("sessLeft").textContent = "at " + clockAt(Date.now() + sim.hours*3600000);
+    $("sessTag").textContent  = "not started";
+    paintSess(null);
+  }
+
+  countTo($("outTime"), sim.hours, hm);
+  $("outTimeSub").textContent = `${num(sim.rated,1)} kW effective · ${num(sim.avgKw,1)} kW average`;
+  countTo($("outCost"), cost.total, lkr);
+  const parts = [];
+  if (cost.unit) parts.push(`${num(cost.billedKwh,1)} kWh billed`);
+  if (cost.time) parts.push(`${hmPlain(cost.billedHours)} billed`);
+  if (cost.fee)  parts.push(`fee ${lkr(cost.fee)}`);
+  $("outCostSub").textContent = parts.join(" · ") || "no rate set";
+  countTo($("dockTime"), sim.hours, hm);
+  countTo($("dockCost"), cost.total, lkr);
+
+  $("chgTag").textContent   = `${num(sim.rated,1)} kW effective`;
+  $("priceTag").textContent = state.billMode === "unit" ? "per unit"
+                            : state.billMode === "time" ? "per hour" : "unit + time";
+  $("curveTag").textContent = state.mode === "dc" ? "DC — tapers hard" : "AC — flat to 90%";
+
+  const kmAdded = sim.energyBattery * 1000 / consumption(car);
+  const perKm   = kmAdded > 0 ? cost.total / kmAdded : 0;
+  $("facts").innerHTML = [
+    ["Into the battery",     num(sim.energyBattery,1), "kWh",   "green"],
+    ["Drawn from the grid",  num(sim.energyGrid,1),    "kWh",   "cyan"],
+    ["Lost as heat",         num(sim.losses,1),        "kWh",   "coral"],
+    ["Peak charging power",  num(sim.peakKw,1),        "kW",    "amber"],
+    ["Range added",          num(kmAdded,0),           "km",    "green"],
+    ["Cost per km",          "Rs " + num(perKm,2),     "",      "violet"],
+    ["Effective rate",       "Rs " + num(cost.total/Math.max(sim.energyBattery,1e-9),2), "/kWh", "violet"],
+    ["Battery used",         num(socTo-socFrom,0),     "points","cyan"]
+  ].map(([k,v,u,c]) =>
+    `<div class="tile t-${c}"><span class="tk">${k}</span><span class="tv">${v}${u?`<small>${u}</small>`:""}</span></div>`
+  ).join("");
+
+  $("segs").innerHTML = sim.segments.map(s =>
+    `<tr><td>${num(s.from,0)}–${num(s.to,0)}%</td><td>${num(s.kw,1)} kW</td>
+     <td>${num(s.kwh,1)} kWh</td><td>${hmPlain(s.hours)}</td></tr>`).join("");
+
+  $("chart").innerHTML = drawChart(sim, socFrom, socTo, state.mode);
+  paintHero(sim, socFrom, socTo);
+
+  const notes = [];
+  if (plugChosen !== plugNeeded)
+    notes.push(["bad", `This charger has a ${PLUGS[plugChosen].label} socket; ${escapeHtml(car.name)} takes ${PLUGS[plugNeeded].label}. It will not plug in without an adapter, so treat the figures below as a what-if.`]);
+  if (chargerKw > vehMaxKw + 0.05)
+    notes.push(["", `The charger can deliver ${num(chargerKw,1)} kW but ${escapeHtml(car.name)} accepts ${num(vehMaxKw,1)} kW. You are charging at ${num(sim.rated,1)} kW and, on a per-hour rate, paying for the rest.`]);
+  if (socTo > 80 && state.mode === "dc"){
+    const above = sim.segments.filter(s => s.from >= 80).reduce((a,s) => a+s.hours, 0);
+    if (above > 0.01)
+      notes.push(["", `The last ${num(socTo-80,0)}% takes ${hmPlain(above)} — ${Math.round(100*above/sim.hours)}% of the session for ${Math.round(100*(socTo-80)/(socTo-socFrom))}% of the charge. Stopping at 80% is usually the faster trip.`]);
+  }
+  if (state.mode === "ac" && sim.hours > 8)
+    notes.push(["ok", `Over ${Math.floor(sim.hours)} hours — this is an overnight charge. If your supply has cheaper night hours, this is the session to move into them.`]);
+  $("notes").innerHTML = notes.map(([c,t]) => `<div class="note ${c}">${t}</div>`).join("");
+}
+
+/* --- boot --- */
+(async function boot(){
+  attachInfo();
+  resetForm();
+  const saved = await DB.load();
+  if (saved && Array.isArray(saved.cars)){
+    // Cars saved before the form changed carried whkm + health instead of range.
+    state.cars = saved.cars.map(c => {
+      if (c.range && c.acPlug) return c;
+      if (c.range) return {...c, acPlug: c.acPlug ?? "type2", dcPlug: c.dc ? (c.dcPlug ?? "ccs2") : null};
+      const cap = c.usable * ((c.health ?? 100) / 100);
+      const {whkm, health, ...rest} = c;
+      return {...rest, usable: +cap.toFixed(1), range: Math.round(cap * 1000 / (whkm || 170)),
+              acPlug: "type2", dcPlug: c.dc ? "ccs2" : null};
+    });
+    state.activeId = saved.activeId;
+    await persist();
+  }
+  notifyState();
+  paintPlugIcon("chgPlugIcon", "chgPlug");
+  paintWindow(+$("socFrom").value, +$("socTo").value);
+  paintHero(null, +$("socFrom").value, +$("socTo").value);
+  renderGarage();
+  renderCarPicker();
+  if (!state.cars.length) show("garage"); else render();
+  if (saved && saved.session) restoreSession(saved.session);
+
+  if ("serviceWorker" in navigator && location.protocol.startsWith("http")){
+    navigator.serviceWorker.register("sw.js").catch(() => {});
+  }
+})();
+
+</script>
+</body>
+</html>

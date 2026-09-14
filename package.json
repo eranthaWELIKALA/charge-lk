@@ -1,0 +1,12 @@
+{
+  "name": "charge-lk",
+  "version": "1.0.0",
+  "private": true,
+  "description": "EV charging time & cost calculator for Sri Lanka — installable PWA, single HTML file.",
+  "scripts": {
+    "dev": "python3 -m http.server 8080 || npx serve ."
+  },
+  "devDependencies": {
+    "jsdom": "^25.0.0"
+  }
+}
