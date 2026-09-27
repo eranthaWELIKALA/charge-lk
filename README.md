@@ -112,8 +112,9 @@ across as JSON.
 
 ## Starting mid-charge
 
-If you plug in and only remember the app an hour later, open **Already charging?** in
-the session card and give it whichever figure you can see:
+If you plug in and only remember the app an hour later, tap **Already charging?** in
+the session card. It opens the same start modal in catch-up mode; give it whichever
+figure you can see:
 
 - **Battery %** — from the car or its app
 - **kWh delivered** — from the charger's display. This is measured at the plug, so

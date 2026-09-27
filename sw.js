@@ -1,7 +1,7 @@
 /* Charge.lk service worker.
    Two jobs: serve the app offline, and own the notifications so they
    still appear when the page itself is not in the foreground. */
-const CACHE = "charge-lk-v1";
+const CACHE = "charge-lk-v2";
 const ASSETS = ["./", "./index.html", "./manifest.webmanifest", "./icon-192.png", "./icon-512.png"];
 
 self.addEventListener("install", e => {
@@ -28,13 +28,16 @@ self.addEventListener("fetch", e => {
 });
 
 // Tapping the alert should bring the running session to the front,
-// not open a second copy of the app.
+// not open a second copy of the app — and land on the Session view.
 self.addEventListener("notificationclick", e => {
   e.notification.close();
   e.waitUntil(
     self.clients.matchAll({type: "window", includeUncontrolled: true}).then(list => {
-      for (const c of list) if ("focus" in c) return c.focus();
-      return self.clients.openWindow("./index.html");
+      for (const c of list) if ("focus" in c){
+        c.postMessage({type: "open-session"});
+        return c.focus();
+      }
+      return self.clients.openWindow("./#session");
     })
   );
 });

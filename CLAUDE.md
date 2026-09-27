@@ -47,12 +47,27 @@ Numbered sections, in order, findable by searching for the heading text:
    object. Two keys: `charge.lk.v1` (cars + active car) and a `session` field
    for the in-progress charge.
 4. **`UI`** — everything else, in labelled `/* --- x --- */` blocks: field
-   explanations (`INFO` map + popover), view switching, the car-form modal,
-   delete confirmation, the real-time session engine (timestamps, not frame
-   counts — see below), notifications, wake lock, the catch-up panel, garage
-   rendering, the calculator's render loop, the chart, and boot.
+   explanations (`INFO` map + popover), view switching (three views —
+   Calculate, My cars, Session — mirrored to the URL hash), the shared
+   `openModal`/`closeModal` helpers, the car-form modal, confirmation, the
+   real-time session engine (timestamps, not frame counts — see below) and its
+   painting (`paintSessUI`: nav tab, calculator mini card, Session view),
+   notifications, wake lock, the start/catch-up modal, garage rendering, the
+   paired percentage controls (slider + −/+ steppers), the calculator's render
+   loop, the chart, and boot.
 
 ## Non-obvious design decisions (don't undo these by accident)
+
+- **A session is a snapshot, independent of the calculator.** It carries its
+  own inputs (`sess.p`) and simulation (`sess.sim`), so the calculator can be
+  changed freely while one runs. Starting a session (or catching up on one)
+  goes through the start modal, which writes its charge window back into the
+  calculator first, so both describe the same charge at the moment of start.
+  The Session tab only exists while a session does.
+- **Every form control is 16px and `html` has `touch-action: manipulation`.**
+  Smaller text makes iOS zoom the page when a field is focused, and tapping the
+  −/+ steppers quickly would otherwise trigger double-tap zoom. Don't "fix" it
+  with `maximum-scale=1` in the viewport — that blocks pinch zoom on Android.
 
 - **The session is timestamp-based, not tick-counted.** Elapsed charge-time is
   always recomputed from `Date.now() - startedAt - pausedMs`, never
